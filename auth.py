@@ -108,9 +108,7 @@ def authenticate_user(member_id, password, ip_address="unknown"):
         (member_id,)
     ).fetchone()
 
-    # -----------------------------------
-    # UNKNOWN USER DETECTION
-    # -----------------------------------
+   
     if user is None:
 
         conn.execute("""
