@@ -4,7 +4,6 @@ from werkzeug.security import generate_password_hash
 conn = sqlite3.connect("sacco_security.db")
 cursor = conn.cursor()
 
-# create user safely
 hashed_password = generate_password_hash("admin123")
 
 cursor.execute("""
