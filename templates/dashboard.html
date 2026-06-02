@@ -148,13 +148,12 @@
 
 const socket = io();
 
-/* ---------------- SOUND ---------------- */
+
 function playSound() {
     const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
     audio.play();
 }
-
-/* ---------------- POPUP ---------------- */
+    
 function showPopup(msg) {
     const div = document.createElement("div");
     div.className = "popup";
@@ -164,7 +163,6 @@ function showPopup(msg) {
     setTimeout(() => div.remove(), 4000);
 }
 
-/* ---------------- RISK UPDATE ---------------- */
 function updateRisk(type) {
 
     let risk = document.getElementById("riskLevel");
@@ -185,7 +183,7 @@ function updateRisk(type) {
     }
 }
 
-/* ---------------- LIVE EVENTS ---------------- */
+
 socket.on("security_event", function(data) {
 
     console.log("EVENT:", data);
