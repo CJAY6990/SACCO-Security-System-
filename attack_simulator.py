@@ -4,8 +4,6 @@ import requests
 
 BASE_URL = "http://127.0.0.1:5000"
 
-
-# fake users & attackers
 users = ["MEM001", "MEM002", "MEM003", "HACKER01", "ADMIN01"]
 passwords = ["wrong123", "1234", "admin", "password", "hack"]
 
@@ -41,9 +39,7 @@ def simulate_attack():
     except Exception as e:
         print("Server not running:", e)
 
-
-# continuous attack simulation
-print("🔥 DEMO ATTACK GENERATOR STARTED 🔥")
+print(" DEMO ATTACK GENERATOR STARTED ")
 
 while True:
     simulate_attack()
