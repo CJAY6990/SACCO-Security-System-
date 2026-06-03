@@ -4,18 +4,12 @@ from flask_socketio import SocketIO
 from auth import authenticate_user
 from database import get_db_connection
 
-# -------------------------------
-# APP SETUP
-# -------------------------------
 app = Flask(__name__)
 app.secret_key = "sacco_security_system_key"
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 
-# -------------------------------
-# REAL-TIME EMIT FUNCTION
-# -------------------------------
 def emit_event(event_type, member, ip):
     socketio.emit("security_event", {
         "type": event_type,
@@ -24,10 +18,14 @@ def emit_event(event_type, member, ip):
     })
 
 
-# -------------------------------
-# LOGIN ROUTE
-# -------------------------------
-@app.route("/", methods=["GET", "POST"])
+# ---------------- HOME ----------------
+@app.route("/")
+def home():
+    return redirect(url_for("login"))
+
+
+# ---------------- LOGIN ----------------
+@app.route("/login", methods=["GET", "POST"])
 def login():
 
     error = None
@@ -40,16 +38,11 @@ def login():
 
         user = authenticate_user(member_id, password, ip_address)
 
-        # ---------------- FAILED LOGIN ----------------
-        if user is None:
-
+        if not user:
             emit_event("FAILED_LOGIN", member_id, ip_address)
-
-            error = "SECURITY ALERT: Invalid login attempt"
-
+            error = "Invalid login attempt"
             return render_template("login.html", error=error)
 
-        # ---------------- SUCCESS LOGIN ----------------
         session["member_id"] = user["member_id"]
         session["role"] = user["role"]
 
@@ -60,9 +53,38 @@ def login():
     return render_template("login.html", error=error)
 
 
-# -------------------------------
-# DASHBOARD ROUTE
-# -------------------------------
+# ---------------- SIGNUP ----------------
+from werkzeug.security import generate_password_hash
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+
+    if request.method == "POST":
+
+        member_id = request.form.get("member_id")
+        password = request.form.get("password")
+
+        hashed_password = generate_password_hash(password)
+
+        conn = get_db_connection()
+
+        conn.execute(
+            """
+            INSERT INTO users (member_id, password, role)
+            VALUES (?, ?, ?)
+            """,
+            (member_id, hashed_password, "member")
+        )
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for("login"))
+
+    return render_template("sign_up.html")
+
+
+# ---------------- DASHBOARD ----------------
 @app.route("/dashboard")
 def dashboard():
 
@@ -71,28 +93,20 @@ def dashboard():
 
     conn = get_db_connection()
 
-    # ---------------- RECENT LOGS (LIMITED FOR SPEED) ----------------
     logs = conn.execute("""
         SELECT * FROM login_logs
         ORDER BY timestamp DESC
         LIMIT 20
     """).fetchall()
 
-    # ---------------- RECENT ALERTS ----------------
     alerts = conn.execute("""
         SELECT * FROM security_alerts
         ORDER BY timestamp DESC
         LIMIT 20
     """).fetchall()
 
-    # ---------------- TOTAL COUNTS (FIX FOR YOUR ISSUE) ----------------
-    total_logs = conn.execute("""
-        SELECT COUNT(*) AS count FROM login_logs
-    """).fetchone()["count"]
-
-    total_alerts = conn.execute("""
-        SELECT COUNT(*) AS count FROM security_alerts
-    """).fetchone()["count"]
+    total_logs = conn.execute("SELECT COUNT(*) AS count FROM login_logs").fetchone()["count"]
+    total_alerts = conn.execute("SELECT COUNT(*) AS count FROM security_alerts").fetchone()["count"]
 
     conn.close()
 
@@ -106,26 +120,57 @@ def dashboard():
         role=session["role"]
     )
 
+@app.route("/admin")
+def admin_dashboard():
 
-# -------------------------------
-# LOGOUT ROUTE
-# -------------------------------
+    if "member_id" not in session:
+        return redirect(url_for("login"))
+
+    if session.get("role") != "admin":
+        return "Access Denied", 403
+
+    conn = get_db_connection()
+
+    users = conn.execute("""
+        SELECT member_id, role
+        FROM users
+        ORDER BY member_id
+    """).fetchall()
+
+    alerts = conn.execute("""
+        SELECT *
+        FROM security_alerts
+        ORDER BY timestamp DESC
+        LIMIT 20
+    """).fetchall()
+
+    banned_ips = conn.execute("""
+        SELECT *
+        FROM ip_bans
+        ORDER BY timestamp DESC
+    """).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "admin_dashboard.html",
+        users=users,
+        alerts=alerts,
+        banned_ips=banned_ips
+    )
+
+# ---------------- LOGOUT ----------------
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
 
 
-# -------------------------------
-# SOCKET CONNECT (OPTIONAL)
-# -------------------------------
+# ---------------- SOCKET ----------------
 @socketio.on("connect")
-def handle_connect():
-    print("Client connected to security dashboard")
+def connect():
+    print("Client connected")
 
 
-# -------------------------------
-# RUN APP
-# -------------------------------
 if __name__ == "__main__":
     socketio.run(app, debug=True)

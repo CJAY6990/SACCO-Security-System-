@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            margin: 0;
+        }
+
+        .header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        th {
+            background: #1f2937;
+            color: white;
+        }
+
+        h2 {
+            margin-top: 40px;
+        }
+
+        .logout {
+            display: inline-block;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>SACCO Security Admin Dashboard</h1>
+    <p>Administrator Access</p>
+</div>
+
+<div class="container">
+
+    <h2>Registered Members</h2>
+
+    <table>
+        <tr>
+            <th>Member ID</th>
+            <th>Role</th>
+        </tr>
+
+        {% for user in users %}
+        <tr>
+            <td>{{ user.member_id }}</td>
+            <td>{{ user.role }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>Security Alerts</h2>
+
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Member</th>
+            <th>Details</th>
+            <th>Time</th>
+        </tr>
+
+        {% for alert in alerts %}
+        <tr>
+            <td>{{ alert.alert_type }}</td>
+            <td>{{ alert.member_id }}</td>
+            <td>{{ alert.details }}</td>
+            <td>{{ alert.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>Banned IP Addresses</h2>
+
+    <table>
+        <tr>
+            <th>IP Address</th>
+            <th>Reason</th>
+            <th>Time</th>
+        </tr>
+
+        {% for ip in banned_ips %}
+        <tr>
+            <td>{{ ip.ip_address }}</td>
+            <td>{{ ip.reason }}</td>
+            <td>{{ ip.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a class="logout" href="{{ url_for('logout') }}">
+        Logout
+    </a>
+
+</div>
+
+</body>
+</html>
