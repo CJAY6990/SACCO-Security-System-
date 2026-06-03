@@ -4,7 +4,10 @@ from werkzeug.security import generate_password_hash
 conn = sqlite3.connect("sacco_security.db")
 cursor = conn.cursor()
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 hashed_password = generate_password_hash("admin123")
 
 cursor.execute("""

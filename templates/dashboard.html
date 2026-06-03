@@ -143,11 +143,19 @@
 <script>
 const socket = io();
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 function playSound() {
     const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
     audio.play();
 }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 function showPopup(msg) {
     const div = document.createElement("div");
     div.className = "popup";
@@ -175,6 +183,10 @@ function updateRisk(type) {
     }
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 socket.on("security_event", function(data) {
     console.log("EVENT:", data);
     showPopup(data.type + " | " + data.member);

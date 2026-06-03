@@ -4,6 +4,10 @@ from flask_socketio import SocketIO
 from auth import authenticate_user
 from database import get_db_connection
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 app = Flask(__name__)
 app.secret_key = "sacco_security_system_key"
 
@@ -18,6 +22,7 @@ def emit_event(event_type, member, ip):
     })
 
 
+<<<<<<< HEAD
 # ---------------- HOME ----------------
 @app.route("/")
 def home():
@@ -26,6 +31,9 @@ def home():
 
 # ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
+=======
+@app.route("/", methods=["GET", "POST"])
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 def login():
 
     error = None
@@ -38,7 +46,12 @@ def login():
 
         user = authenticate_user(member_id, password, ip_address)
 
+<<<<<<< HEAD
         if not user:
+=======
+        if user is None:
+
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
             emit_event("FAILED_LOGIN", member_id, ip_address)
             error = "Invalid login attempt"
             return render_template("login.html", error=error)
@@ -53,6 +66,7 @@ def login():
     return render_template("login.html", error=error)
 
 
+<<<<<<< HEAD
 # ---------------- SIGNUP ----------------
 from werkzeug.security import generate_password_hash
 
@@ -85,6 +99,8 @@ def signup():
 
 
 # ---------------- DASHBOARD ----------------
+=======
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 @app.route("/dashboard")
 def dashboard():
 
@@ -98,15 +114,29 @@ def dashboard():
         ORDER BY timestamp DESC
         LIMIT 20
     """).fetchall()
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
     alerts = conn.execute("""
         SELECT * FROM security_alerts
         ORDER BY timestamp DESC
         LIMIT 20
     """).fetchall()
 
+<<<<<<< HEAD
     total_logs = conn.execute("SELECT COUNT(*) AS count FROM login_logs").fetchone()["count"]
     total_alerts = conn.execute("SELECT COUNT(*) AS count FROM security_alerts").fetchone()["count"]
+=======
+    total_logs = conn.execute("""
+        SELECT COUNT(*) AS count FROM login_logs
+    """).fetchone()["count"]
+
+    total_alerts = conn.execute("""
+        SELECT COUNT(*) AS count FROM security_alerts
+    """).fetchone()["count"]
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 
     conn.close()
 
@@ -123,6 +153,7 @@ def dashboard():
 @app.route("/admin")
 def admin_dashboard():
 
+<<<<<<< HEAD
     if "member_id" not in session:
         return redirect(url_for("login"))
 
@@ -160,13 +191,18 @@ def admin_dashboard():
     )
 
 # ---------------- LOGOUT ----------------
+=======
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
 
+<<<<<<< HEAD
 
 # ---------------- SOCKET ----------------
+=======
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 @socketio.on("connect")
 def connect():
     print("Client connected")

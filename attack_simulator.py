@@ -39,9 +39,13 @@ def simulate_attack():
     except Exception as e:
         print("Server not running:", e)
 
+<<<<<<< HEAD
 
 
 print("DEMO ATTACK GENERATOR STARTED ")
+=======
+print(" DEMO ATTACK GENERATOR STARTED ")
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 
 while True:
     simulate_attack()

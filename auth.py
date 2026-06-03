@@ -116,8 +116,13 @@ def authenticate_user(member_id, password, ip_address="unknown"):
         SELECT * FROM users WHERE member_id = ?
     """, (member_id,)).fetchone()
 
+<<<<<<< HEAD
     # 3. Unknown user
     if not user:
+=======
+   
+    if user is None:
+>>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
 
         conn.execute("""
             INSERT INTO login_logs (member_id, status, reason, ip_address)
