@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Activity</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            margin: 0;
+        }
+
+        .header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #1f2937;
+            color: white;
+        }
+
+        .back {
+            margin-top: 20px;
+            display: inline-block;
+            padding: 10px;
+            background: #1f2937;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>LOGIN ACTIVITY LOGS</h2>
+</div>
+
+<div class="container">
+
+    <table>
+        <tr>
+            <th>Member</th>
+            <th>Status</th>
+            <th>Reason</th>
+            <th>IP</th>
+            <th>Time</th>
+        </tr>
+
+        {% for l in logs %}
+        <tr>
+            <td>{{ l.member_id }}</td>
+            <td>{{ l.status }}</td>
+            <td>{{ l.reason }}</td>
+            <td>{{ l.ip_address }}</td>
+            <td>{{ l.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a class="back" href="/dashboard">Back to Dashboard</a>
+
+</div>
+
+</body>
+</html>

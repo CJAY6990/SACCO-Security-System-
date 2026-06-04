@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Security Alerts</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            margin: 0;
+        }
+
+        .header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #1f2937;
+            color: white;
+        }
+
+        .back {
+            margin-top: 20px;
+            display: inline-block;
+            padding: 10px;
+            background: red;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>SECURITY ALERTS</h2>
+</div>
+
+<div class="container">
+
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Member</th>
+            <th>Details</th>
+            <th>Time</th>
+        </tr>
+
+        {% for a in alerts %}
+        <tr>
+            <td>{{ a.alert_type }}</td>
+            <td>{{ a.member_id }}</td>
+            <td>{{ a.details }}</td>
+            <td>{{ a.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a class="back" href="/dashboard">Back to Dashboard</a>
+
+</div>
+
+</body>
+</html>

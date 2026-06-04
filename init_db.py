@@ -5,13 +5,15 @@ print("INITIALIZING SACCO SECURITY DATABASE...")
 conn = sqlite3.connect("sacco_security.db")
 cursor = conn.cursor()
 
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     member_id TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE,
+    phone TEXT,
     password TEXT NOT NULL,
-    role TEXT NOT NULL
+    role TEXT NOT NULL,
+    verified INTEGER DEFAULT 0
 )
 """)
 
@@ -51,6 +53,14 @@ CREATE TABLE IF NOT EXISTS risk_scores (
     ip_address TEXT,
     score INTEGER DEFAULT 0,
     last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+""")
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS verification_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    member_id TEXT NOT NULL,
+    code TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )
 """)
 

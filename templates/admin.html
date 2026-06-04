@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+
+    <style>
+        body{
+            font-family: Arial;
+            background:#f4f6f9;
+            margin:0;
+        }
+
+        .header{
+            background:#1f2937;
+            color:white;
+            padding:20px;
+            text-align:center;
+        }
+
+        .container{
+            max-width:1000px;
+            margin:auto;
+            padding:20px;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            background:white;
+        }
+
+        th,td{
+            padding:12px;
+            border:1px solid #ddd;
+            text-align:center;
+        }
+
+        th{
+            background:#1f2937;
+            color:white;
+        }
+
+        .back{
+            display:inline-block;
+            margin-top:20px;
+            padding:10px 15px;
+            background:#1f2937;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>ADMIN CONTROL PANEL</h2>
+</div>
+
+<div class="container">
+
+    <h3>Registered Users</h3>
+
+    <table>
+
+        <tr>
+            <th>ID</th>
+            <th>Member ID</th>
+            <th>Role</th>
+        </tr>
+
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.member_id }}</td>
+            <td>{{ user.role }}</td>
+        </tr>
+        {% endfor %}
+
+    </table>
+
+    <a class="back" href="/dashboard">
+        Back to Dashboard
+    </a>
+
+</div>
+
+</body>
+</html>

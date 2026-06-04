@@ -2,40 +2,18 @@ from werkzeug.security import check_password_hash
 from database import get_db_connection
 
 
-# ---------------- IP CHECK ----------------
-def is_ip_banned(ip_address):
-
+def is_ip_banned(ip):
     conn = get_db_connection()
-
-    result = conn.execute("""
-        SELECT 1 FROM ip_bans
-        WHERE ip_address = ?
-    """, (ip_address,)).fetchone()
-
+    result = conn.execute(
+        "SELECT 1 FROM ip_bans WHERE ip_address = ?",
+        (ip,)
+    ).fetchone()
     conn.close()
-
     return result is not None
 
 
-# ---------------- BAN IP ----------------
-def ban_ip(ip_address, reason):
-
-    conn = get_db_connection()
-
-    conn.execute("""
-        INSERT OR IGNORE INTO ip_bans (ip_address, reason)
-        VALUES (?, ?)
-    """, (ip_address, reason))
-
-    conn.commit()
-    conn.close()
-
-
-# ---------------- ACCOUNT LOCK CHECK ----------------
 def is_account_locked(member_id):
-
     conn = get_db_connection()
-
     result = conn.execute("""
         SELECT COUNT(*) AS fails
         FROM login_logs
@@ -43,167 +21,53 @@ def is_account_locked(member_id):
         AND status = 'FAILED'
         AND datetime(timestamp) >= datetime('now', '-5 minutes')
     """, (member_id,)).fetchone()
-
     conn.close()
-
     return result["fails"] >= 5
 
 
-# ---------------- ALERT SYSTEM ----------------
-def trigger_security_alert(member_id, alert_type, details):
+def authenticate_user(member_id, password, ip):
 
     conn = get_db_connection()
 
-    conn.execute("""
-        INSERT INTO security_alerts (alert_type, member_id, details)
-        VALUES (?, ?, ?)
-    """, (alert_type, member_id, details))
-
-    conn.commit()
-    conn.close()
-
-
-# ---------------- RISK SCORE ----------------
-def update_risk_score(member_id, ip_address, points):
-
-    conn = get_db_connection()
-
-    existing = conn.execute("""
-        SELECT * FROM risk_scores
-        WHERE member_id = ? AND ip_address = ?
-    """, (member_id, ip_address)).fetchone()
-
-    if existing:
-
-        new_score = min(existing["score"] + points, 100)
-
-        conn.execute("""
-            UPDATE risk_scores
-            SET score = ?, last_updated = CURRENT_TIMESTAMP
-            WHERE member_id = ? AND ip_address = ?
-        """, (new_score, member_id, ip_address))
-
-    else:
-
-        conn.execute("""
-            INSERT INTO risk_scores (member_id, ip_address, score)
-            VALUES (?, ?, ?)
-        """, (member_id, ip_address, points))
-
-    conn.commit()
-    conn.close()
-
-
-# ---------------- MAIN AUTH ----------------
-def authenticate_user(member_id, password, ip_address="unknown"):
-
-    conn = get_db_connection()
-
-    # 1. IP banned check
-    if is_ip_banned(ip_address):
-
-        conn.execute("""
-            INSERT INTO login_logs (member_id, status, reason, ip_address)
-            VALUES (?, 'FAILED', 'ip_banned', ?)
-        """, (member_id, ip_address))
-
-        conn.commit()
-        conn.close()
+    if is_ip_banned(ip):
         return None
 
-    # 2. Get user
-    user = conn.execute("""
-        SELECT * FROM users WHERE member_id = ?
-    """, (member_id,)).fetchone()
+    user = conn.execute(
+        "SELECT * FROM users WHERE member_id = ?",
+        (member_id,)
+    ).fetchone()
 
-<<<<<<< HEAD
-    # 3. Unknown user
     if not user:
-=======
-   
-    if user is None:
->>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
-
         conn.execute("""
             INSERT INTO login_logs (member_id, status, reason, ip_address)
             VALUES (?, 'FAILED', 'unknown_user', ?)
-        """, (member_id, ip_address))
-
+        """, (member_id, ip))
         conn.commit()
-
-        trigger_security_alert(
-            member_id,
-            "UNKNOWN_USER",
-            "Login attempt for non-existent account"
-        )
-
-        update_risk_score(member_id, ip_address, 15)
-
         conn.close()
         return None
 
-    # 4. Account lock check
     if is_account_locked(member_id):
-
         conn.execute("""
             INSERT INTO login_logs (member_id, status, reason, ip_address)
-            VALUES (?, 'FAILED', 'account_locked', ?)
-        """, (member_id, ip_address))
-
+            VALUES (?, 'FAILED', 'locked', ?)
+        """, (member_id, ip))
         conn.commit()
-
-        trigger_security_alert(
-            member_id,
-            "ACCOUNT_LOCKED",
-            "Too many failed login attempts"
-        )
-
-        update_risk_score(member_id, ip_address, 25)
-
         conn.close()
         return None
 
-    # 5. Password check (SECURE)
     if not check_password_hash(user["password"], password):
-
         conn.execute("""
             INSERT INTO login_logs (member_id, status, reason, ip_address)
             VALUES (?, 'FAILED', 'wrong_password', ?)
-        """, (member_id, ip_address))
-
+        """, (member_id, ip))
         conn.commit()
-
-        update_risk_score(member_id, ip_address, 10)
-
-        # brute force detection
-        ip_failures = conn.execute("""
-            SELECT COUNT(*) AS fails
-            FROM login_logs
-            WHERE ip_address = ?
-            AND status = 'FAILED'
-            AND datetime(timestamp) >= datetime('now', '-5 minutes')
-        """, (ip_address,)).fetchone()
-
-        if ip_failures["fails"] >= 8:
-
-            ban_ip(ip_address, "Brute force attack detected")
-
-            trigger_security_alert(
-                member_id,
-                "IP_BANNED",
-                f"IP {ip_address} blocked due to attacks"
-            )
-
-            update_risk_score(member_id, ip_address, 40)
-
         conn.close()
         return None
 
-    # 6. SUCCESS LOGIN
     conn.execute("""
         INSERT INTO login_logs (member_id, status, reason, ip_address)
-        VALUES (?, 'SUCCESS', 'valid_login', ?)
-    """, (member_id, ip_address))
+        VALUES (?, 'SUCCESS', 'login_ok', ?)
+    """, (member_id, ip))
 
     conn.commit()
     conn.close()

@@ -1,21 +1,19 @@
-import sqlite3
 from werkzeug.security import generate_password_hash
+from database import get_db_connection
 
-conn = sqlite3.connect("sacco_security.db")
-cursor = conn.cursor()
+conn = get_db_connection()
 
-<<<<<<< HEAD
+member_id = "ADMIN001"
+password = "admin123"
 
-=======
->>>>>>> a521d7a4e518c3ca4901e6b4cd5c4a36173df449
-hashed_password = generate_password_hash("admin123")
+hashed_password = generate_password_hash(password)
 
-cursor.execute("""
-INSERT INTO users (member_id, password, role)
-VALUES (?, ?, ?)
-""", ("MEM001", hashed_password, "admin"))
+conn.execute("""
+    INSERT INTO users (member_id, password, role)
+    VALUES (?, ?, ?)
+""", (member_id, hashed_password, "admin"))
 
 conn.commit()
 conn.close()
 
-print("USER CREATED SUCCESSFULLY")
+print("Admin user created successfully")
