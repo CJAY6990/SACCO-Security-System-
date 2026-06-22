@@ -12,21 +12,20 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 def emit_event(event_type, member, ip):
-    socketio.emit(
-        "security_event",
-        {
-            "type": event_type,
-            "member": member,
-            "ip": ip
-        }
-    )
+    socketio.emit("security_event", {
+        "type": event_type,
+        "member": member,
+        "ip": ip
+    })
 
 
+# ---------------- HOME ----------------
 @app.route("/")
 def home():
     return redirect(url_for("login"))
 
 
+# ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
@@ -38,44 +37,26 @@ def login():
         password = request.form.get("password")
         ip_address = request.remote_addr
 
-        user = authenticate_user(
-            member_id,
-            password,
-            ip_address
-        )
+        user = authenticate_user(member_id, password, ip_address)
 
         if not user:
 
-            emit_event(
-                "FAILED_LOGIN",
-                member_id,
-                ip_address
-            )
+            emit_event("FAILED_LOGIN", member_id, ip_address)
 
             error = "Invalid Member ID or Password"
-
-            return render_template(
-                "login.html",
-                error=error
-            )
+            return render_template("login.html", error=error)
 
         session["member_id"] = user["member_id"]
         session["role"] = user["role"]
 
-        emit_event(
-            "SUCCESS_LOGIN",
-            member_id,
-            ip_address
-        )
+        emit_event("SUCCESS_LOGIN", member_id, ip_address)
 
         return redirect(url_for("dashboard"))
 
-    return render_template(
-        "login.html",
-        error=error
-    )
+    return render_template("login.html", error=error)
 
 
+# ---------------- SIGNUP ----------------
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
 
@@ -88,12 +69,10 @@ def signup():
         phone = request.form.get("phone")
         password = request.form.get("password")
 
-        # 1. CHECK EMPTY FIELDS
         if not member_id or not email or not phone or not password:
             error = "All fields are required"
             return render_template("sign_up.html", error=error)
 
-        # 2. STRONG PASSWORD CHECK
         import re
 
         if len(password) < 8 or \
@@ -102,12 +81,11 @@ def signup():
            not re.search(r"\d", password) or \
            not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
 
-            error = "Weak password! Use uppercase, lowercase, number & symbol"
+            error = "Weak password"
             return render_template("sign_up.html", error=error)
 
         conn = get_db_connection()
 
-        # 3. CHECK IF USER EXISTS
         existing = conn.execute(
             "SELECT * FROM users WHERE member_id = ?",
             (member_id,)
@@ -115,21 +93,14 @@ def signup():
 
         if existing:
             conn.close()
-            error = "Member already exists"
+            error = "User already exists"
             return render_template("sign_up.html", error=error)
 
-        # 4. HASH PASSWORD
         hashed_password = generate_password_hash(password)
 
-        # 5. INSERT USER (WITH EMAIL + PHONE + NOT VERIFIED)
         conn.execute("""
             INSERT INTO users (
-                member_id,
-                email,
-                phone,
-                password,
-                role,
-                verified
+                member_id, email, phone, password, role, verified
             )
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
@@ -147,6 +118,10 @@ def signup():
         return redirect(url_for("login"))
 
     return render_template("sign_up.html", error=error)
+
+
+# ---------------- DASHBOARD ----------------
+# ---------------- DASHBOARD ----------------
 @app.route("/dashboard")
 def dashboard():
 
@@ -163,42 +138,92 @@ def dashboard():
         "SELECT COUNT(*) AS count FROM security_alerts"
     ).fetchone()["count"]
 
+    total_users = conn.execute(
+        "SELECT COUNT(*) AS count FROM users"
+    ).fetchone()["count"]
+
+    failed_logins = conn.execute("""
+        SELECT COUNT(*) AS count
+        FROM login_logs
+        WHERE status='FAILED'
+    """).fetchone()["count"]
+
+    successful_logins = conn.execute("""
+        SELECT COUNT(*) AS count
+        FROM login_logs
+        WHERE status='SUCCESS'
+    """).fetchone()["count"]
+
+    banned_ips = conn.execute("""
+        SELECT COUNT(*) AS count
+        FROM ip_bans
+    """).fetchone()["count"]
+
+    recent_logs = conn.execute("""
+        SELECT *
+        FROM login_logs
+        ORDER BY timestamp DESC
+        LIMIT 10
+    """).fetchall()
+
+    # Threat Level Calculation
+    if failed_logins >= 20 or total_alerts >= 10:
+        threat_level = "HIGH"
+
+    elif failed_logins >= 5 or total_alerts >= 3:
+        threat_level = "MEDIUM"
+
+    else:
+        threat_level = "LOW"
+
     conn.close()
 
     return render_template(
         "dashboard.html",
         total_logs=total_logs,
         total_alerts=total_alerts,
+        total_users=total_users,
+        failed_logins=failed_logins,
+        successful_logins=successful_logins,
+        banned_ips=banned_ips,
+        recent_logs=recent_logs,
+        threat_level=threat_level,
         member_id=session["member_id"],
         role=session["role"]
-    )
+    ) 
 
-
+# ---------------- LOGS ----------------#
 @app.route("/logs")
 def logs_page():
 
     if "member_id" not in session:
         return redirect(url_for("login"))
 
+    status_filter = request.args.get("status")
+
     conn = get_db_connection()
 
-    logs = conn.execute(
-        """
-        SELECT *
-        FROM login_logs
-        ORDER BY timestamp DESC
-        LIMIT 50
-        """
-    ).fetchall()
+    if status_filter in ["SUCCESS", "FAILED"]:
+        logs = conn.execute("""
+            SELECT *
+            FROM login_logs
+            WHERE status = ?
+            ORDER BY timestamp DESC
+        """, (status_filter,)).fetchall()
+    else:
+        logs = conn.execute("""
+            SELECT *
+            FROM login_logs
+            ORDER BY timestamp DESC
+            LIMIT 50
+        """).fetchall()
 
     conn.close()
 
-    return render_template(
-        "logs.html",
-        logs=logs
-    )
+    return render_template("logs.html", logs=logs)
 
 
+# ---------------- ALERTS ----------------
 @app.route("/alerts")
 def alerts_page():
 
@@ -207,22 +232,18 @@ def alerts_page():
 
     conn = get_db_connection()
 
-    alerts = conn.execute(
-        """
-        SELECT *
-        FROM security_alerts
+    alerts = conn.execute("""
+        SELECT * FROM security_alerts
         ORDER BY timestamp DESC
         LIMIT 50
-        """
-    ).fetchall()
+    """).fetchall()
 
     conn.close()
 
-    return render_template(
-        "alerts.html",
-        alerts=alerts
-    )
- 
+    return render_template("alerts.html", alerts=alerts)
+
+
+# ---------------- ADMIN ----------------
 @app.route("/admin")
 def admin():
 
@@ -235,30 +256,28 @@ def admin():
     conn = get_db_connection()
 
     users = conn.execute("""
-        SELECT *
-        FROM users
+        SELECT * FROM users
         ORDER BY member_id
     """).fetchall()
 
     conn.close()
 
-    return render_template(
-        "admin.html",
-        users=users
-    )
+    return render_template("admin.html", users=users)
 
+
+# ---------------- LOGOUT ----------------
 @app.route("/logout")
 def logout():
-
     session.clear()
-
     return redirect(url_for("login"))
 
 
+# ---------------- SOCKET ----------------
 @socketio.on("connect")
 def handle_connect():
     print("Client connected")
 
 
+# ---------------- RUN APP ----------------
 if __name__ == "__main__":
     socketio.run(app, debug=True)

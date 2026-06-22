@@ -5,138 +5,255 @@
 
     <style>
         body {
-            font-family: Arial;
             margin: 0;
-            background: #f4f6f9;
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
         }
 
-        /* HEADER */
-        .header {
-            background: #1f2937;
+        .navbar {
+            background-color: #1f2937;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .navbar a {
             color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header h2 {
-            margin: 0;
-        }
-
-        .logout-btn {
-            background: red;
-            color: white;
-            padding: 10px 15px;
             text-decoration: none;
-            border-radius: 6px;
+            margin: 0 15px;
+            font-weight: bold;
         }
 
-        /* CONTAINER */
-        .container {
-            max-width: 1100px;
-            margin: auto;
-            padding: 20px;
+        .navbar a:hover {
+            color: #60a5fa;
         }
 
-        /* CARDS */
+        .header {
+            text-align: center;
+            padding: 25px;
+            background: white;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .header p {
+            color: #555;
+        }
+
         .cards {
             display: flex;
-            gap: 20px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 20px;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .card-link {
+            text-decoration: none;
+            color: inherit;
         }
 
         .card {
-            background: white;
-            padding: 20px;
             width: 220px;
+            background: white;
             border-radius: 10px;
+            padding: 20px;
             text-align: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+            transition: 0.3s;
         }
 
-        /* NAVIGATION */
-        .nav {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            color: #374151;
+        }
+
+        .card h2 {
+            color: #2563eb;
+            margin: 0;
+        }
+
+        .section {
+            width: 95%;
+            margin: auto;
             margin-top: 30px;
-            flex-wrap: wrap;
         }
 
-        .nav a {
-            background: #1f2937;
+        .section h2 {
+            color: #1f2937;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background-color: #1f2937;
             color: white;
-            padding: 12px 18px;
-            text-decoration: none;
-            border-radius: 6px;
+            padding: 12px;
         }
 
-        .nav a:hover {
-            background: #111827;
-        }
-
-        /* STATUS */
-        .status {
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
             text-align: center;
-            margin-top: 20px;
-            font-size: 18px;
         }
 
-        .safe { color: green; }
+        tr:hover {
+            background-color: #f3f4f6;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        .failed {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
-<div class="header">
-    <h2>SACCO SECURITY CONTROL CENTER</h2>
-    <a class="logout-btn" href="/logout">Logout</a>
-</div>
-
-<!-- MAIN -->
-<div class="container">
-
-    <!-- STATUS -->
-    <div class="status">
-        Security Status: <span class="safe">SYSTEM SAFE</span>
-    </div>
-
-    <!-- CARDS -->
-    <div class="cards">
-
-        <div class="card">
-            <h3>Total Logs</h3>
-            <h2>{{ total_logs }}</h2>
-        </div>
-
-        <div class="card">
-            <h3>Total Alerts</h3>
-            <h2>{{ total_alerts }}</h2>
-        </div>
-
-        <div class="card">
-            <h3>Active User</h3>
-            <h2>{{ member_id }}</h2>
-        </div>
-
-    </div>
-
-    <!-- NAVIGATION -->
-    <div class="nav">
-
+    <div class="navbar">
+        <a href="/dashboard">Dashboard</a>
         <a href="/logs">Login Activity</a>
-
         <a href="/alerts">Security Alerts</a>
 
-        <a href="/admin">Admin Panel</a>
+        {% if role == "admin" %}
+            <a href="/admin">Admin Panel</a>
+        {% endif %}
+
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="header">
+        <h1>SACCO Security Monitoring System</h1>
+        <p>Welcome {{ member_id }} | Role: {{ role }}</p>
+    </div>
+
+    <div class="cards">
+
+        <a href="/logs?status=SUCCESS" class="card-link">
+            <div class="card">
+                <h3>Successful Logins</h3>
+                <h2>{{ successful_logins }}</h2>
+            </div>
+        </a>
+
+        <a href="/logs?status=FAILED" class="card-link">
+            <div class="card">
+                <h3>Failed Logins</h3>
+                <h2>{{ failed_logins }}</h2>
+            </div>
+        </a>
+
+        <a href="/logs" class="card-link">
+            <div class="card">
+                <h3>Total Logs</h3>
+                <h2>{{ total_logs }}</h2>
+            </div>
+        </a>
+
+        <a href="/alerts" class="card-link">
+            <div class="card">
+                <h3>Security Alerts</h3>
+                <h2>{{ total_alerts }}</h2>
+            </div>
+        </a>
+
+        <a href="/admin" class="card-link">
+            <div class="card">
+                <h3>Total Users</h3>
+                <h2>{{ total_users }}</h2>
+            </div>
+        </a>
+
+        <div class="card">
+            <h3>Banned IPs</h3>
+            <h2>{{ banned_ips }}</h2>
+        </div>
 
     </div>
 
-</div>
+    <div class="section">
+
+        <h2>Recent Security Activity</h2>
+
+        <table>
+            <tr>
+                <th>Member ID</th>
+                <th>Status</th>
+                <th>Reason</th>
+                <th>IP Address</th>
+                <th>Timestamp</th>
+            </tr>
+
+            {% for log in recent_logs %}
+            <tr>
+                <td>{{ log.member_id }}</td>
+
+                <td>
+                    {% if log.status == "SUCCESS" %}
+                        <span class="success">SUCCESS</span>
+                    {% else %}
+                        <span class="failed">FAILED</span>
+                    {% endif %}
+                </td>
+
+                <td>{{ log.reason }}</td>
+                <td>{{ log.ip_address }}</td>
+                <td>{{ log.timestamp }}</td>
+            </tr>
+            {% endfor %}
+
+        </table>
+
+    </div>
 
 </body>
 </html>
+<div class="card">
+    <h3>Threat Level</h3>
+
+    {% if threat_level == "HIGH" %}
+        <h2 style="color:red;">HIGH</h2>
+
+    {% elif threat_level == "MEDIUM" %}
+        <h2 style="color:orange;">MEDIUM</h2>
+
+    {% else %}
+        <h2 style="color:green;">LOW</h2>
+
+    {% endif %}
+</div>
+<h2>Live Threat Feed</h2>
+
+<table>
+    <tr>
+        <th>Alert Type</th>
+        <th>Member</th>
+        <th>Details</th>
+        <th>Time</th>
+    </tr>
+
+    {% for alert in recent_alerts %}
+    <tr>
+        <td>{{ alert.alert_type }}</td>
+        <td>{{ alert.member_id }}</td>
+        <td>{{ alert.details }}</td>
+        <td>{{ alert.timestamp }}</td>
+    </tr>
+    {% endfor %}
+</table>
