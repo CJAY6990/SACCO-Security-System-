@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>System Activity Logs</title>
+
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background:#f4f6f9;
+            margin:0;
+        }
+
+        .container{
+            width:95%;
+            margin:30px auto;
+        }
+
+        .header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:20px;
+        }
+
+        .search-box{
+            margin-bottom:20px;
+            background:white;
+            padding:15px;
+            border-radius:8px;
+            box-shadow:0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .search-box input{
+            width:300px;
+            padding:10px;
+            border:1px solid #ccc;
+            border-radius:5px;
+        }
+
+        .search-box button{
+            padding:10px 15px;
+            border:none;
+            background:#2563eb;
+            color:white;
+            border-radius:5px;
+            cursor:pointer;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            background:rgb(203, 201, 226);
+        }
+
+        th{
+            background:#5b7fc8;
+            color:white;
+            padding:12px;
+        }
+
+        td{
+            padding:10px;
+            border-bottom:1px solid #ddd;
+        }
+
+        tr:hover{
+            background:#f3f4f6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>System Activity Logs</h1>
+    </div>
+
+    <!-- SEARCH BAR AT THE TOP -->
+    <div class="search-box">
+
+        <form method="GET"
+              action="{{ url_for('activities') }}">
+
+            <input
+                type="text"
+                name="search"
+                placeholder="Search by username, activity or IP..."
+                value="{{ request.args.get('search', '') }}"
+            >
+
+            <button type="submit">Search</button>
+
+        </form>
+
+    </div>
+
+    <!-- ACTIVITIES TABLE -->
+    <table>
+
+        <tr>
+            <th>User</th>
+            <th>Activity</th>
+            <th>IP Address</th>
+            <th>Time</th>
+        </tr>
+
+        {% for activity in activities %}
+        <tr>
+            <td>{{ activity.username }}</td>
+            <td>{{ activity.action }}</td>
+            <td>{{ activity.ip_address }}</td>
+            <td>{{ activity.timestamp }}</td>
+        </tr>
+        {% endfor %}
+
+    </table>
+
+</div>
+
+</body>
+</html>

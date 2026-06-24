@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report Suspicious Activity</title>
+
+    <style>
+        body{
+            font-family:Arial;
+            background:#f4f6f9;
+            margin:0;
+        }
+
+        .container{
+            width:50%;
+            margin:80px auto;
+            background:white;
+            padding:30px;
+            border-radius:10px;
+            box-shadow:0 2px 10px rgba(0,0,0,0.1);
+            text-align:center;
+        }
+
+        textarea{
+            width:90%;
+            height:150px;
+            padding:10px;
+            margin-top:20px;
+        }
+
+        button{
+            margin-top:20px;
+            padding:12px 20px;
+            background:#2563eb;
+            color:white;
+            border:none;
+            cursor:pointer;
+            border-radius:6px;
+        }
+
+        button:hover{
+            background:#1d4ed8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Report Suspicious Activity</h2>
+
+    <form method="POST">
+
+        <textarea name="details"
+                  placeholder="Describe the suspicious activity..."></textarea>
+
+        <br>
+
+        <button type="submit">Submit Report</button>
+
+    </form>
+
+</div>
+
+</body>
+</html>

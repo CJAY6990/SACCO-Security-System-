@@ -1,89 +1,169 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - SACCO Security</title>
+    <title>Login - Security Monitoring System</title>
 
     <style>
-        body {
-            font-family: Arial;
-            background: #f4f6f9;
-            margin: 0;
 
-            /* CENTERING */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, sans-serif;
         }
 
-        .box {
-            background: white;
-            padding: 30px;
-            width: 350px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            text-align: center;
+        body{
+            background:#090618;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            min-height:100vh;
         }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+        .login-container{
+            width:400px;
+            background:rgb(106, 188, 223);
+            padding:40px;
+            border-radius:10px;
+            box-shadow:0 4px 12px rgba(0,0,0,0.1);
         }
 
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #1f2937;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+        .login-container h1{
+            text-align:center;
+            color:#1f2937;
+            margin-bottom:10px;
         }
 
-        button:hover {
-            background: #111827;
+        .login-container p{
+            text-align:center;
+            color:#6b7280;
+            margin-bottom:30px;
         }
 
-        .error {
-            color: red;
-            margin-bottom: 10px;
+        .login-container input{
+            width:100%;
+            padding:12px;
+            margin-bottom:15px;
+            border:1px solid #11af1c;
+            border-radius:5px;
+            font-size:15px;
         }
 
-        a {
-            display: block;
-            margin-top: 10px;
-            color: #1f2937;
-            text-decoration: none;
+        .login-container input:focus{
+            outline:none;
+            border-color:#b0ad0c;
         }
+
+        .login-btn{
+            width:100%;
+            padding:12px;
+            border:none;
+            border-radius:5px;
+            background:#09782c;
+            color:white;
+            font-size:16px;
+            cursor:pointer;
+        }
+
+        .login-btn:hover{
+            background:#0d9e2c;
+        }
+
+        .error{
+            background:#4d438f;
+            color:#dc2626;
+            padding:10px;
+            border-radius:5px;
+            text-align:center;
+            margin-bottom:15px;
+        }
+
+        .links{
+            text-align:center;
+            margin-top:20px;
+        }
+
+        .links a{
+            color:#2563eb;
+            text-decoration:none;
+            display:block;
+            margin-top:8px;
+        }
+
+        .links a:hover{
+            text-decoration:underline;
+        }
+
     </style>
+
 </head>
 
 <body>
 
-<div class="box">
+    <div class="login-container">
 
-    <h2>SECURITY LOGIN</h2>
+        <h1>Security Monitoring System</h1>
+        <p>Login to continue</p>
 
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
+        {% if error %}
+            <div class="error">
+                {{ error }}
+            </div>
+        {% endif %}
 
-    <form method="POST" action="/login">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="error">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-        <input type="text" name="member_id" placeholder="Member ID" required>
+        <form method="POST">
 
-        <input type="password" name="password" placeholder="Password" required>
+            <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                required
+            >
 
-        <button type="submit">Login</button>
+            <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                required
+            >
 
-    </form>
+            <button type="submit" class="login-btn">
+                Login
+            </button>
 
-    <a href="/signup">Create Account</a>
+        </form>
 
-</div>
+        <div class="links">
+
+            <a href="{{ url_for('signup') }}">
+                Create Account
+            </a>
+
+            {% if 'change_password' in url_for.__globals__ %}
+            <a href="{{ url_for('change_password') }}">
+                Change Password
+            </a>
+            {% endif %}
+
+            {% if 'forgot_password' in url_for.__globals__ %}
+            <a href="{{ url_for('forgot_password') }}">
+                Forgot Password?
+            </a>
+            {% endif %}
+
+        </div>
+
+    </div>
 
 </body>
 </html>

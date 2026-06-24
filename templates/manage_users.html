@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Users</title>
+
+    <style>
+
+        body{
+            margin:0;
+            font-family:Arial, sans-serif;
+            background:#f4f6f9;
+        }
+
+        .navbar{
+            background:#111827;
+            padding:15px;
+        }
+
+        .navbar a{
+            color:white;
+            text-decoration:none;
+            margin-right:20px;
+            font-weight:bold;
+        }
+
+        .navbar a:hover{
+            color:#60a5fa;
+        }
+
+        .container{
+            width:95%;
+            margin:auto;
+            margin-top:30px;
+        }
+
+        h1{
+            text-align:center;
+            color:#1f2937;
+        }
+
+        .search-box{
+            text-align:center;
+            margin:25px 0;
+        }
+
+        .search-box input{
+            width:400px;
+            padding:12px;
+            border-radius:6px;
+            border:1px solid #ccc;
+        }
+
+        .search-box button{
+            padding:12px 20px;
+            border:none;
+            border-radius:6px;
+            background:#2563eb;
+            color:white;
+            cursor:pointer;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            background:white;
+        }
+
+        th{
+            background:#111827;
+            color:white;
+            padding:12px;
+        }
+
+        td{
+            padding:12px;
+            text-align:center;
+            border-bottom:1px solid #ddd;
+        }
+
+        tr:hover{
+            background:#f3f4f6;
+        }
+
+        .btn{
+            padding:8px 12px;
+            border:none;
+            border-radius:5px;
+            color:white;
+            cursor:pointer;
+            margin:2px;
+        }
+
+        .promote{
+            background:green;
+        }
+
+        .demote{
+            background:orange;
+        }
+
+        .block{
+            background:red;
+        }
+
+        .unblock{
+            background:#2563eb;
+        }
+
+        .super-admin{
+            color:purple;
+            font-weight:bold;
+        }
+
+        .admin{
+            color:green;
+            font-weight:bold;
+        }
+
+        .user{
+            color:#555;
+            font-weight:bold;
+        }
+
+    </style>
+
+</head>
+<body>
+
+<div class="navbar">
+
+    <a href="{{ url_for('admin_dashboard') }}">
+        Dashboard
+    </a>
+
+    <a href="{{ url_for('manage_users') }}">
+        Manage Users
+    </a>
+
+    <a href="{{ url_for('activities') }}">
+        Activities
+    </a>
+
+    <a href="{{ url_for('live_threats') }}">
+        Live Threat Feed
+    </a>
+
+    <a href="{{ url_for('logout') }}">
+        Logout
+    </a>
+
+</div>
+
+<div class="container">
+
+    <h1>User Management</h1>
+
+    <div class="search-box">
+
+        <form method="GET">
+
+            <input
+                type="text"
+                name="search"
+                placeholder="Search username or email..."
+                value="{{ request.args.get('search','') }}"
+            >
+
+            <button type="submit">
+                Search
+            </button>
+
+        </form>
+
+    </div>
+
+    <table>
+
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for user in users %}
+
+        <tr>
+
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+
+            <td>
+
+                {% if user.role == "super_admin" %}
+                    <span class="super-admin">
+                        SUPER ADMIN
+                    </span>
+
+                {% elif user.role == "admin" %}
+                    <span class="admin">
+                        ADMIN
+                    </span>
+
+                {% else %}
+                    <span class="user">
+                        USER
+                    </span>
+                {% endif %}
+
+            </td>
+
+            <td>{{ user.status }}</td>
+
+            <td>
+
+                {% if user.role == "super_admin" %}
+
+                    <strong>Protected Account</strong>
+
+                {% else %}
+
+                    {% if user.role == "user" %}
+
+                        <a href="{{ url_for('promote_user',
+                            user_id=user.id) }}">
+
+                            <button class="btn promote">
+                                Promote
+                            </button>
+
+                        </a>
+
+                    {% endif %}
+
+                    {% if user.role == "admin" %}
+
+                        <a href="{{ url_for('demote_user',
+                            user_id=user.id) }}">
+
+                            <button class="btn demote">
+                                Demote
+                            </button>
+
+                        </a>
+
+                    {% endif %}
+
+                    {% if user.status == "active" %}
+
+                        <a href="{{ url_for('block_user',
+                            user_id=user.id) }}">
+
+                            <button class="btn block">
+                                Block
+                            </button>
+
+                        </a>
+
+                    {% else %}
+
+                        <a href="{{ url_for('unblock_user',
+                            user_id=user.id) }}">
+
+                            <button class="btn unblock">
+                                Unblock
+                            </button>
+
+                        </a>
+
+                    {% endif %}
+
+                {% endif %}
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+</div>
+
+</body>
+</html>

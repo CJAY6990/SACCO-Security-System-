@@ -1,218 +1,289 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SACCO Security Dashboard</title>
+    <title>Security Monitoring System - Admin Dashboard</title>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, sans-serif;
         }
 
-        .navbar {
-            background-color: #1f2937;
-            padding: 15px;
-            text-align: center;
+        body{
+            background:#f9f9f9;
+            display:flex;
         }
 
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            margin: 0 15px;
-            font-weight: bold;
+        /* Sidebar */
+
+        .sidebar{
+            width:240px;
+            background:#111827;
+            min-height:100vh;
+            padding-top:20px;
+            position:fixed;
         }
 
-        .navbar a:hover {
-            color: #60a5fa;
+        .sidebar h2{
+            color:white;
+            text-align:center;
+            margin-bottom:30px;
         }
 
-        .header {
-            text-align: center;
-            padding: 25px;
-            background: white;
-            margin-bottom: 20px;
+        .sidebar a{
+            display:block;
+            color:white;
+            text-decoration:none;
+            padding:15px 25px;
+            transition:0.3s;
         }
 
-        .header h1 {
-            margin-bottom: 10px;
-            color: #1f2937;
+        .sidebar a:hover{
+            background:#2563eb;
         }
 
-        .header p {
-            color: #555;
+        /* Main content */
+
+        .main{
+            margin-left:240px;
+            width:calc(100% - 240px);
+            padding:30px;
         }
 
-        .cards {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 20px;
-            padding: 20px;
+        .header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:25px;
         }
 
-        .card-link {
-            text-decoration: none;
-            color: inherit;
+        .header h1{
+            color:#1f2937;
         }
 
-        .card {
-            width: 220px;
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
-            transition: 0.3s;
+        /* Search Bar */
+
+        .search-box{
+            background:white;
+            padding:15px;
+            border-radius:10px;
+            margin-bottom:25px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
         }
 
-        .card:hover {
-            transform: translateY(-5px);
+        .search-box input{
+            width:85%;
+            padding:12px;
+            border:1px solid #ccc;
+            border-radius:5px;
         }
 
-        .card h3 {
-            margin-bottom: 10px;
-            color: #374151;
+        .search-box button{
+            padding:12px 20px;
+            background:#2563eb;
+            color:white;
+            border:none;
+            border-radius:5px;
+            cursor:pointer;
         }
 
-        .card h2 {
-            color: #2563eb;
-            margin: 0;
+        /* Cards */
+
+        .cards{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+            gap:20px;
+            margin-bottom:30px;
         }
 
-        .section {
-            width: 95%;
-            margin: auto;
-            margin-top: 30px;
+        .card{
+            background:white;
+            padding:25px;
+            border-radius:10px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
+            text-align:center;
         }
 
-        .section h2 {
-            color: #1f2937;
+        .card h3{
+            color:#6b7280;
+            margin-bottom:10px;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
+        .card h2{
+            color:#2563eb;
         }
 
-        th {
-            background-color: #1f2937;
-            color: white;
-            padding: 12px;
+        /* Tables */
+
+        .section{
+            background:white;
+            padding:20px;
+            border-radius:10px;
+            margin-top:30px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
         }
 
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            text-align: center;
+        .section h2{
+            margin-bottom:20px;
+            color:#1f2937;
         }
 
-        tr:hover {
-            background-color: #f3f4f6;
+        table{
+            width:100%;
+            border-collapse:collapse;
         }
 
-        .success {
-            color: green;
-            font-weight: bold;
+        th{
+            background:#111827;
+            color:white;
+            padding:12px;
         }
 
-        .failed {
-            color: red;
-            font-weight: bold;
+        td{
+            padding:12px;
+            border-bottom:1px solid #ddd;
+            text-align:center;
         }
+
+        tr:hover{
+            background:#f3f4f6;
+        }
+
+        /* Notifications */
+
+        #notification-container{
+            position:fixed;
+            top:20px;
+            right:20px;
+            z-index:9999;
+        }
+
+        .notification{
+            background:#dc2626;
+            color:white;
+            padding:15px;
+            margin-bottom:10px;
+            border-radius:8px;
+            width:320px;
+            box-shadow:0 2px 10px rgba(0,0,0,0.3);
+            animation:slideIn .5s ease;
+        }
+
+        @keyframes slideIn{
+            from{
+                transform:translateX(100%);
+                opacity:0;
+            }
+            to{
+                transform:translateX(0);
+                opacity:1;
+            }
+        }
+
     </style>
 </head>
 
 <body>
 
-    <div class="navbar">
-        <a href="/dashboard">Dashboard</a>
-        <a href="/logs">Login Activity</a>
-        <a href="/alerts">Security Alerts</a>
+<div id="notification-container"></div>
 
-        {% if role == "admin" %}
-            <a href="/admin">Admin Panel</a>
-        {% endif %}
+<!-- Sidebar -->
 
-        <a href="/logout">Logout</a>
-    </div>
+<div class="sidebar">
+
+    <h2>Security Monitor</h2>
+
+    <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('manage_users') }}">Manage Users</a>
+    <a href="{{ url_for('activities') }}">System Activities</a>
+    <a href="{{ url_for('login_activity') }}">Login Activity</a>
+    <a href="{{ url_for('live_threats') }}">Live Threat Feed</a>
+    <a href="{{ url_for('user_reports') }}">User Reports</a>
+    <a href="{{ url_for('change_password') }}">Change Password</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
+
+</div>
+
+<!-- Main -->
+
+<div class="main">
 
     <div class="header">
-        <h1>SACCO Security Monitoring System</h1>
-        <p>Welcome {{ member_id }} | Role: {{ role }}</p>
+        <h1>Welcome {{ username }}</h1>
+        <h3>Role: {{ role }}</h3>
     </div>
+
+    <!-- Search -->
+
+    <div class="search-box">
+
+        <form method="GET" action="{{ url_for('manage_users') }}">
+
+            <input type="text"
+                   name="search"
+                   placeholder="Search users, activities or IP address...">
+
+            <button type="submit">Search</button>
+
+        </form>
+
+    </div>
+
+    <!-- Statistics -->
 
     <div class="cards">
 
-        <a href="/logs?status=SUCCESS" class="card-link">
-            <div class="card">
-                <h3>Successful Logins</h3>
-                <h2>{{ successful_logins }}</h2>
-            </div>
-        </a>
+        <div class="card">
+            <h3>Total Users</h3>
+            <h2>{{ stats.users }}</h2>
+        </div>
 
-        <a href="/logs?status=FAILED" class="card-link">
-            <div class="card">
-                <h3>Failed Logins</h3>
-                <h2>{{ failed_logins }}</h2>
-            </div>
-        </a>
+        <div class="card">
+            <h3>Login Logs</h3>
+            <h2>{{ stats.logs }}</h2>
+        </div>
 
-        <a href="/logs" class="card-link">
-            <div class="card">
-                <h3>Total Logs</h3>
-                <h2>{{ total_logs }}</h2>
-            </div>
-        </a>
+        <div class="card">
+            <h3>Security Alerts</h3>
+            <h2>{{ stats.alerts }}</h2>
+        </div>
 
-        <a href="/alerts" class="card-link">
-            <div class="card">
-                <h3>Security Alerts</h3>
-                <h2>{{ total_alerts }}</h2>
-            </div>
-        </a>
-
-        <a href="/admin" class="card-link">
-            <div class="card">
-                <h3>Total Users</h3>
-                <h2>{{ total_users }}</h2>
-            </div>
-        </a>
+        <div class="card">
+            <h3>Blocked Users</h3>
+            <h2>{{ stats.blocked }}</h2>
+        </div>
 
         <div class="card">
             <h3>Banned IPs</h3>
-            <h2>{{ banned_ips }}</h2>
+            <h2>{{ stats.banned_ips }}</h2>
         </div>
 
     </div>
 
+    <!-- Recent Logs -->
+
     <div class="section">
 
-        <h2>Recent Security Activity</h2>
+        <h2>Recent Login Activity</h2>
 
         <table>
+
             <tr>
-                <th>Member ID</th>
+                <th>User</th>
                 <th>Status</th>
-                <th>Reason</th>
                 <th>IP Address</th>
-                <th>Timestamp</th>
+                <th>Time</th>
             </tr>
 
             {% for log in recent_logs %}
             <tr>
-                <td>{{ log.member_id }}</td>
-
-                <td>
-                    {% if log.status == "SUCCESS" %}
-                        <span class="success">SUCCESS</span>
-                    {% else %}
-                        <span class="failed">FAILED</span>
-                    {% endif %}
-                </td>
-
-                <td>{{ log.reason }}</td>
+                <td>{{ log.username }}</td>
+                <td>{{ log.status }}</td>
                 <td>{{ log.ip_address }}</td>
                 <td>{{ log.timestamp }}</td>
             </tr>
@@ -222,38 +293,67 @@
 
     </div>
 
+    <!-- Threat Feed -->
+
+    <div class="section">
+
+        <h2>Recent Threat Alerts</h2>
+
+        <table>
+
+            <tr>
+                <th>Type</th>
+                <th>User</th>
+                <th>Details</th>
+                <th>Time</th>
+            </tr>
+
+            {% for alert in recent_alerts %}
+            <tr>
+                <td>{{ alert.alert_type }}</td>
+                <td>{{ alert.username }}</td>
+                <td>{{ alert.details }}</td>
+                <td>{{ alert.timestamp }}</td>
+            </tr>
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div>
+
+<script>
+
+const socket = io();
+
+socket.on("security_event", function(data){
+
+    let container =
+        document.getElementById(
+            "notification-container"
+        );
+
+    let notification =
+        document.createElement("div");
+
+    notification.className = "notification";
+
+    notification.innerHTML = `
+        <strong>${data.type}</strong><br>
+        User: ${data.user}<br>
+        Details: ${data.details || "N/A"}
+    `;
+
+    container.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+
+});
+
+</script>
+
 </body>
 </html>
-<div class="card">
-    <h3>Threat Level</h3>
-
-    {% if threat_level == "HIGH" %}
-        <h2 style="color:red;">HIGH</h2>
-
-    {% elif threat_level == "MEDIUM" %}
-        <h2 style="color:orange;">MEDIUM</h2>
-
-    {% else %}
-        <h2 style="color:green;">LOW</h2>
-
-    {% endif %}
-</div>
-<h2>Live Threat Feed</h2>
-
-<table>
-    <tr>
-        <th>Alert Type</th>
-        <th>Member</th>
-        <th>Details</th>
-        <th>Time</th>
-    </tr>
-
-    {% for alert in recent_alerts %}
-    <tr>
-        <td>{{ alert.alert_type }}</td>
-        <td>{{ alert.member_id }}</td>
-        <td>{{ alert.details }}</td>
-        <td>{{ alert.timestamp }}</td>
-    </tr>
-    {% endfor %}
-</table>

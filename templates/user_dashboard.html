@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Dashboard - Security Monitoring System</title>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, sans-serif;
+        }
+
+        body{
+            background:#f4f6f9;
+        }
+
+        /* Navbar */
+
+        .navbar{
+            background:#111827;
+            padding:18px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .navbar h2{
+            color:white;
+        }
+
+        .navbar a{
+            color:white;
+            text-decoration:none;
+            margin-left:20px;
+            font-weight:bold;
+        }
+
+        .navbar a:hover{
+            color:#60a5fa;
+        }
+
+        /* Header */
+
+        .header{
+            width:90%;
+            margin:30px auto;
+            background:white;
+            padding:30px;
+            border-radius:10px;
+            text-align:center;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1{
+            color:#1f2937;
+            margin-bottom:10px;
+        }
+
+        .header p{
+            color:#666;
+        }
+
+        /* Malware Scan Section */
+
+        .scan-section{
+            width:90%;
+            margin:20px auto;
+            background:#fff;
+            padding:35px;
+            border-radius:10px;
+            text-align:center;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
+            border-left:6px solid #dc2626;
+        }
+
+        .scan-section h2{
+            color:#dc2626;
+            margin-bottom:15px;
+        }
+
+        .scan-btn{
+            margin-top:20px;
+            padding:15px 35px;
+            border:none;
+            border-radius:8px;
+            background:#dc2626;
+            color:white;
+            font-size:17px;
+            cursor:pointer;
+        }
+
+        .scan-btn:hover{
+            background:#b91c1c;
+        }
+
+        /* Quick Actions */
+
+        .actions{
+            width:90%;
+            margin:30px auto;
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+            gap:20px;
+        }
+
+        .card{
+            background:white;
+            padding:25px;
+            border-radius:10px;
+            text-align:center;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .card h3{
+            margin-bottom:15px;
+            color:#1f2937;
+        }
+
+        .card p{
+            color:#666;
+            margin-bottom:20px;
+        }
+
+        .card button{
+            padding:12px 20px;
+            border:none;
+            border-radius:8px;
+            background:#2563eb;
+            color:white;
+            cursor:pointer;
+        }
+
+        .card button:hover{
+            background:#1d4ed8;
+        }
+
+        /* Reports */
+
+        .reports{
+            width:90%;
+            margin:30px auto;
+            background:white;
+            padding:25px;
+            border-radius:10px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .reports h2{
+            margin-bottom:20px;
+            color:#1f2937;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        th{
+            background:#111827;
+            color:white;
+            padding:12px;
+        }
+
+        td{
+            padding:12px;
+            text-align:center;
+            border-bottom:1px solid #ddd;
+        }
+
+        tr:hover{
+            background:#f3f4f6;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+
+    <div class="navbar">
+
+        <h2>Security Monitoring System</h2>
+
+        <div>
+            <a href="{{ url_for('user_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('change_password') }}">Change Password</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+
+    </div>
+
+    <!-- Welcome -->
+
+    <div class="header">
+
+        <h1>Welcome {{ username }}</h1>
+
+        <p>
+            Manage your account, report suspicious activities
+            and perform security actions.
+        </p>
+
+    </div>
+
+    <!-- Malware Scan -->
+
+    <div class="scan-section">
+
+        <h2>🛡️ Malware Detection Center</h2>
+
+        <p>
+            Upload files and scan them for potential malware threats.
+        </p>
+
+        <a href="{{ url_for('upload_scan') }}">
+
+            <button class="scan-btn">
+                Start Malware Scan
+            </button>
+
+        </a>
+
+    </div>
+
+    <!-- Quick Actions -->
+
+    <div class="actions">
+
+        <div class="card">
+
+            <h3>🚨 Report Suspicious Activity</h3>
+
+            <p>
+                Notify administrators about suspicious activities.
+            </p>
+
+            <a href="{{ url_for('report_activity') }}">
+                <button>Report Activity</button>
+            </a>
+
+        </div>
+
+        <div class="card">
+
+            <h3>🔑 Change Password</h3>
+
+            <p>
+                Improve account security by updating your password.
+            </p>
+
+            <a href="{{ url_for('change_password') }}">
+                <button>Change Password</button>
+            </a>
+
+        </div>
+
+        <div class="card">
+
+            <h3>👤 Account Status</h3>
+
+            <p>
+                Username: <strong>{{ username }}</strong><br>
+                Role: <strong>{{ role }}</strong>
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- My Reports -->
+
+    <div class="reports">
+
+        <h2>My Submitted Reports</h2>
+
+        <table>
+
+            <tr>
+                <th>Report Type</th>
+                <th>Description</th>
+                <th>Date</th>
+            </tr>
+
+            {% for alert in alerts %}
+
+            <tr>
+                <td>{{ alert.alert_type }}</td>
+                <td>{{ alert.details }}</td>
+                <td>{{ alert.timestamp }}</td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</body>
+</html>

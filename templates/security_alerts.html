@@ -1,0 +1,34 @@
+<table>
+
+    <tr>
+        <th>Alert Type</th>
+        <th>User</th>
+        <th>Description</th>
+        <th>Time</th>
+    </tr>
+
+    {% for alert in alerts %}
+    <tr>
+
+        <td>
+
+            {% if alert.alert_type == "USER_REPORT" %}
+                <span style="color:red;">
+                    USER REPORT
+                </span>
+            {% else %}
+                {{ alert.alert_type }}
+            {% endif %}
+
+        </td>
+
+        <td>{{ alert.username }}</td>
+
+        <td>{{ alert.details }}</td>
+
+        <td>{{ alert.timestamp }}</td>
+
+    </tr>
+    {% endfor %}
+
+</table>

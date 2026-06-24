@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Threat Feed</title>
+
+    <style>
+        body{
+            margin:0;
+            font-family:Arial, sans-serif;
+            background:#919e64;
+        }
+
+        .navbar{
+            background:#111827;
+            padding:15px;
+            text-align:center;
+        }
+
+        .navbar a{
+            color:white;
+            text-decoration:none;
+            margin:0 15px;
+            font-weight:bold;
+        }
+
+        .navbar a:hover{
+            color:#60a5fa;
+        }
+
+        .container{
+            width:95%;
+            margin:30px auto;
+        }
+
+        h1{
+            text-align:center;
+            color:#111827;
+            margin-bottom:20px;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            background:white;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        th{
+            background:#111827;
+            color:white;
+            padding:12px;
+        }
+
+        td{
+            padding:12px;
+            border-bottom:1px solid #ddd;
+            text-align:center;
+        }
+
+        tr:hover{
+            background:#f3f4f6;
+        }
+
+        .high{
+            color:red;
+            font-weight:bold;
+        }
+
+        .medium{
+            color:orange;
+            font-weight:bold;
+        }
+
+        .low{
+            color:green;
+            font-weight:bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="navbar">
+
+        <a href="{{ url_for('admin_dashboard') }}">
+            Dashboard
+        </a>
+
+        <a href="{{ url_for('manage_users') }}">
+            Users
+        </a>
+
+        <a href="{{ url_for('login_activity') }}">
+            Login Activity
+        </a>
+
+        <a href="{{ url_for('activities') }}">
+            Activities
+        </a>
+
+        <a href="{{ url_for('logout') }}">
+            Logout
+        </a>
+
+    </div>
+
+    <div class="container">
+
+        <h1>Live Threat Feed</h1>
+
+        <table>
+
+            <tr>
+                <th>Threat Type</th>
+                <th>User</th>
+                <th>Details</th>
+                <th>Time</th>
+            </tr>
+
+            {% for threat in threats %}
+
+            <tr>
+
+                <td>
+
+                    {% if "BRUTE" in threat.alert_type %}
+                        <span class="high">
+                            {{ threat.alert_type }}
+                        </span>
+
+                    {% elif "SUSPICIOUS" in threat.alert_type %}
+                        <span class="medium">
+                            {{ threat.alert_type }}
+                        </span>
+
+                    {% else %}
+                        <span class="low">
+                            {{ threat.alert_type }}
+                        </span>
+
+                    {% endif %}
+
+                </td>
+
+                <td>{{ threat.username }}</td>
+                <td>{{ threat.details }}</td>
+                <td>{{ threat.timestamp }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</body>
+</html>
