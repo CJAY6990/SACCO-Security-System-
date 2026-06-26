@@ -14,12 +14,14 @@ flask-cors==6.0.5
 Flask-Mail==0.10.0
 Flask-SocketIO==5.6.1
 greenlet==3.5.1
+gunicorn==26.0.0
 h11==0.16.0
 idna==3.16
 itsdangerous==2.2.0
 Jinja2==3.1.6
 jwt==1.4.0
 MarkupSafe==3.0.3
+packaging==26.2
 pillow==12.2.0
 pycparser==3.0
 PyOTP==2.10.0
