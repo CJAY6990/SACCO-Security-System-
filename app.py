@@ -27,7 +27,11 @@ from security_monitor import (
 app = Flask(__name__)
 app.secret_key = "security_system_key"
 
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode="eventlet"
+)
 
 
 # =====================================================
