@@ -1,25 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Users</title>
 
     <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, sans-serif;
+        }
 
         body{
-            margin:0;
-            font-family:Arial, sans-serif;
             background:#f4f6f9;
         }
 
         .navbar{
             background:#111827;
             padding:15px;
+            text-align:center;
         }
 
         .navbar a{
             color:white;
             text-decoration:none;
-            margin-right:20px;
+            margin:0 15px;
             font-weight:bold;
         }
 
@@ -29,40 +36,45 @@
 
         .container{
             width:95%;
-            margin:auto;
-            margin-top:30px;
+            margin:30px auto;
         }
 
         h1{
             text-align:center;
-            color:#1f2937;
+            color:#111827;
+            margin-bottom:20px;
         }
 
         .search-box{
+            margin-bottom:20px;
             text-align:center;
-            margin:25px 0;
         }
 
         .search-box input{
-            width:400px;
-            padding:12px;
-            border-radius:6px;
+            width:300px;
+            padding:10px;
             border:1px solid #ccc;
+            border-radius:5px;
         }
 
         .search-box button{
-            padding:12px 20px;
+            padding:10px 20px;
             border:none;
-            border-radius:6px;
             background:#2563eb;
             color:white;
+            border-radius:5px;
             cursor:pointer;
+        }
+
+        .search-box button:hover{
+            background:#1d4ed8;
         }
 
         table{
             width:100%;
             border-collapse:collapse;
             background:white;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
         }
 
         th{
@@ -73,216 +85,187 @@
 
         td{
             padding:12px;
-            text-align:center;
             border-bottom:1px solid #ddd;
+            text-align:center;
         }
 
         tr:hover{
-            background:#f3f4f6;
+            background:#f9fafb;
         }
 
-        .btn{
-            padding:8px 12px;
-            border:none;
-            border-radius:5px;
-            color:white;
-            cursor:pointer;
-            margin:2px;
-        }
-
-        .promote{
-            background:green;
-        }
-
-        .demote{
-            background:orange;
-        }
-
-        .block{
-            background:red;
-        }
-
-        .unblock{
-            background:#2563eb;
-        }
-
-        .super-admin{
-            color:purple;
-            font-weight:bold;
-        }
-
-        .admin{
+        .active{
             color:green;
             font-weight:bold;
         }
 
-        .user{
-            color:#555;
+        .blocked{
+            color:red;
             font-weight:bold;
         }
 
-    </style>
+        .btn{
+            padding:7px 12px;
+            text-decoration:none;
+            border-radius:5px;
+            color:white;
+            margin:2px;
+            display:inline-block;
+            font-size:14px;
+        }
 
+        .promote{
+            background:#16a34a;
+        }
+
+        .demote{
+            background:#eab308;
+        }
+
+        .block{
+            background:#dc2626;
+        }
+
+        .unblock{
+            background:#0891b2;
+        }
+
+        .delete{
+            background:#7f1d1d;
+        }
+
+        .btn:hover{
+            opacity:0.85;
+        }
+
+        .flash{
+            width:80%;
+            margin:10px auto;
+            padding:12px;
+            background:#d1fae5;
+            color:#065f46;
+            border-radius:5px;
+            text-align:center;
+        }
+    </style>
 </head>
 <body>
 
-<div class="navbar">
-
-    <a href="{{ url_for('admin_dashboard') }}">
-        Dashboard
-    </a>
-
-    <a href="{{ url_for('manage_users') }}">
-        Manage Users
-    </a>
-
-    <a href="{{ url_for('activities') }}">
-        Activities
-    </a>
-
-    <a href="{{ url_for('live_threats') }}">
-        Live Threat Feed
-    </a>
-
-    <a href="{{ url_for('logout') }}">
-        Logout
-    </a>
-
-</div>
-
-<div class="container">
-
-    <h1>User Management</h1>
-
-    <div class="search-box">
-
-        <form method="GET">
-
-            <input
-                type="text"
-                name="search"
-                placeholder="Search username or email..."
-                value="{{ request.args.get('search','') }}"
-            >
-
-            <button type="submit">
-                Search
-            </button>
-
-        </form>
-
+    <div class="navbar">
+        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('security_alerts') }}">Alerts</a>
+        <a href="{{ url_for('activities') }}">Activities</a>
+        <a href="{{ url_for('live_threats') }}">Threat Feed</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
     </div>
 
-    <table>
+    <div class="container">
 
-        <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
+        <h1>Manage Users</h1>
 
-        {% for user in users %}
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="flash">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-        <tr>
+        <div class="search-box">
+            <form method="GET"
+                  action="{{ url_for('manage_users') }}">
 
-            <td>{{ user.id }}</td>
-            <td>{{ user.username }}</td>
-            <td>{{ user.email }}</td>
+                <input type="text"
+                       name="search"
+                       placeholder="Search by username, email, role or status..."
+                       value="{{ search }}">
 
-            <td>
+                <button type="submit">Search</button>
+            </form>
+        </div>
 
-                {% if user.role == "super_admin" %}
-                    <span class="super-admin">
-                        SUPER ADMIN
-                    </span>
+        <table>
 
-                {% elif user.role == "admin" %}
-                    <span class="admin">
-                        ADMIN
-                    </span>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
 
-                {% else %}
-                    <span class="user">
-                        USER
-                    </span>
-                {% endif %}
+            {% for user in users %}
+            <tr>
 
-            </td>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.role }}</td>
 
-            <td>{{ user.status }}</td>
-
-            <td>
-
-                {% if user.role == "super_admin" %}
-
-                    <strong>Protected Account</strong>
-
-                {% else %}
-
-                    {% if user.role == "user" %}
-
-                        <a href="{{ url_for('promote_user',
-                            user_id=user.id) }}">
-
-                            <button class="btn promote">
-                                Promote
-                            </button>
-
-                        </a>
-
+                <td>
+                    {% if user.status == 'active' %}
+                        <span class="active">Active</span>
+                    {% else %}
+                        <span class="blocked">Blocked</span>
                     {% endif %}
+                </td>
 
-                    {% if user.role == "admin" %}
+                <td>
 
-                        <a href="{{ url_for('demote_user',
-                            user_id=user.id) }}">
+                    {% if user.role != 'super_admin' %}
 
-                            <button class="btn demote">
-                                Demote
-                            </button>
-
+                        {% if user.role == 'user' %}
+                        <a class="btn promote"
+                           href="{{ url_for('promote_user', user_id=user.id) }}"
+                           onclick="return confirm('Promote this user to Admin?')">
+                           Promote
                         </a>
+                        {% endif %}
 
-                    {% endif %}
-
-                    {% if user.status == "active" %}
-
-                        <a href="{{ url_for('block_user',
-                            user_id=user.id) }}">
-
-                            <button class="btn block">
-                                Block
-                            </button>
-
+                        {% if user.role == 'admin' %}
+                        <a class="btn demote"
+                           href="{{ url_for('demote_user', user_id=user.id) }}"
+                           onclick="return confirm('Demote this Admin to User?')">
+                           Demote
                         </a>
+                        {% endif %}
+
+                        {% if user.status == 'active' %}
+                        <a class="btn block"
+                           href="{{ url_for('block_user', user_id=user.id) }}"
+                           onclick="return confirm('Block this user?')">
+                           Block
+                        </a>
+                        {% else %}
+                        <a class="btn unblock"
+                           href="{{ url_for('unblock_user', user_id=user.id) }}"
+                           onclick="return confirm('Unblock this user?')">
+                           Unblock
+                        </a>
+                        {% endif %}
+
+                        {% if user.username != username %}
+                        <a class="btn delete"
+                           href="{{ url_for('delete_user', user_id=user.id) }}"
+                           onclick="return confirm('Are you sure you want to permanently delete this user?')">
+                           Delete
+                        </a>
+                        {% endif %}
 
                     {% else %}
-
-                        <a href="{{ url_for('unblock_user',
-                            user_id=user.id) }}">
-
-                            <button class="btn unblock">
-                                Unblock
-                            </button>
-
-                        </a>
-
+                        <strong>Protected Account</strong>
                     {% endif %}
 
-                {% endif %}
+                </td>
 
-            </td>
+            </tr>
+            {% endfor %}
 
-        </tr>
+        </table>
 
-        {% endfor %}
-
-    </table>
-
-</div>
+    </div>
 
 </body>
 </html>

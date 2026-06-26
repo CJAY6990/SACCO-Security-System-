@@ -795,10 +795,77 @@ def demote_user(user_id):
         WHERE id=?
     """, (user_id,))
 
+
     conn.commit()
     conn.close()
 
     flash("User demoted successfully.")
+
+    return redirect(url_for("manage_users"))
+
+@app.route("/delete_user/<int:user_id>")
+@role_required(["admin", "super_admin"])
+def delete_user(user_id):
+
+    conn = get_db_connection()
+
+    user = conn.execute("""
+        SELECT *
+        FROM users
+        WHERE id = ?
+    """, (user_id,)).fetchone()
+
+    # Check if user exists
+    if not user:
+        conn.close()
+        flash("User not found.")
+        return redirect(url_for("manage_users"))
+
+    # Prevent self deletion
+    if user["username"] == session["username"]:
+        conn.close()
+        flash("You cannot delete your own account.")
+        return redirect(url_for("manage_users"))
+
+    # Prevent deletion of Super Admin
+    if user["role"] == "super_admin":
+        conn.close()
+        flash("Super Admin cannot be deleted.")
+        return redirect(url_for("manage_users"))
+
+    # Delete related records
+    conn.execute("""
+        DELETE FROM activities
+        WHERE username = ?
+    """, (user["username"],))
+
+    conn.execute("""
+        DELETE FROM login_logs
+        WHERE username = ?
+    """, (user["username"],))
+
+    conn.execute("""
+        DELETE FROM security_alerts
+        WHERE username = ?
+    """, (user["username"],))
+
+    # Delete the user
+    conn.execute("""
+        DELETE FROM users
+        WHERE id = ?
+    """, (user_id,))
+
+    conn.commit()
+
+    log_activity(
+        session["username"],
+        f"Deleted user {user['username']}",
+        request.remote_addr
+    )
+
+    conn.close()
+
+    flash("User deleted successfully.")
 
     return redirect(url_for("manage_users"))
 

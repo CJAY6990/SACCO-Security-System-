@@ -52,3 +52,4 @@ def detect_bruteforce(ip_address, member_id, limit=5, window=300):
 def record_failed_login(ip_address, member_id):
     key = f"{ip_address}:{member_id}"
     failed_logins[key].append(time.time())
+    

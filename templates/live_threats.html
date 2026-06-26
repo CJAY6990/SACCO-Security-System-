@@ -1,14 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Threat Feed</title>
 
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
     <style>
-        body{
+        *{
             margin:0;
+            padding:0;
+            box-sizing:border-box;
             font-family:Arial, sans-serif;
-            background:#919e64;
         }
+
+        body{
+            background:#f4f6f9;
+        }
+
+        /* ================= NAVBAR ================= */
 
         .navbar{
             background:#111827;
@@ -27,6 +39,8 @@
             color:#60a5fa;
         }
 
+        /* ================= CONTAINER ================= */
+
         .container{
             width:95%;
             margin:30px auto;
@@ -35,8 +49,17 @@
         h1{
             text-align:center;
             color:#111827;
-            margin-bottom:20px;
+            margin-bottom:10px;
         }
+
+        .status{
+            text-align:center;
+            font-weight:bold;
+            margin-bottom:20px;
+            color:green;
+        }
+
+        /* ================= TABLE ================= */
 
         table{
             width:100%;
@@ -58,27 +81,49 @@
         }
 
         tr:hover{
-            background:#f3f4f6;
+            background:#f9fafb;
         }
 
-        .high{
-            color:red;
+        .critical{
+            color:#dc2626;
             font-weight:bold;
         }
 
-        .medium{
-            color:orange;
+        .warning{
+            color:#ea580c;
             font-weight:bold;
         }
 
-        .low{
-            color:green;
+        .normal{
+            color:#16a34a;
             font-weight:bold;
+        }
+
+        /* ================= FLASH ANIMATION ================= */
+
+        .new-alert{
+            animation:flash 1.5s ease-in-out;
+        }
+
+        @keyframes flash{
+            0%{
+                background:#fee2e2;
+            }
+
+            50%{
+                background:#ffffff;
+            }
+
+            100%{
+                background:#fee2e2;
+            }
         }
     </style>
 </head>
 
 <body>
+
+    <!-- ================= NAVBAR ================= -->
 
     <div class="navbar">
 
@@ -87,11 +132,11 @@
         </a>
 
         <a href="{{ url_for('manage_users') }}">
-            Users
+            Manage Users
         </a>
 
-        <a href="{{ url_for('login_activity') }}">
-            Login Activity
+        <a href="{{ url_for('security_alerts') }}">
+            Alerts
         </a>
 
         <a href="{{ url_for('activities') }}">
@@ -104,55 +149,234 @@
 
     </div>
 
+
+    <!-- ================= CONTENT ================= -->
+
     <div class="container">
 
         <h1>Live Threat Feed</h1>
 
+        <div class="status" id="connectionStatus">
+            Connecting to Security Server...
+        </div>
+
         <table>
 
-            <tr>
-                <th>Threat Type</th>
-                <th>User</th>
-                <th>Details</th>
-                <th>Time</th>
-            </tr>
+            <thead>
 
-            {% for threat in threats %}
+                <tr>
+                    <th>Threat Type</th>
+                    <th>User</th>
+                    <th>IP Address</th>
+                    <th>Time</th>
+                </tr>
 
-            <tr>
+            </thead>
 
-                <td>
+            <tbody id="threatTable">
 
-                    {% if "BRUTE" in threat.alert_type %}
-                        <span class="high">
-                            {{ threat.alert_type }}
-                        </span>
+                {% for threat in threats %}
 
-                    {% elif "SUSPICIOUS" in threat.alert_type %}
-                        <span class="medium">
-                            {{ threat.alert_type }}
-                        </span>
+                <tr>
 
-                    {% else %}
-                        <span class="low">
-                            {{ threat.alert_type }}
-                        </span>
+                    <td>
 
-                    {% endif %}
+                        {% if "BRUTE" in threat.alert_type
+                           or "MALWARE" in threat.alert_type %}
 
-                </td>
+                            <span class="critical">
+                                {{ threat.alert_type }}
+                            </span>
 
-                <td>{{ threat.username }}</td>
-                <td>{{ threat.details }}</td>
-                <td>{{ threat.timestamp }}</td>
+                        {% elif "FAILED" in threat.alert_type
+                             or "SUSPICIOUS" in threat.alert_type %}
 
-            </tr>
+                            <span class="warning">
+                                {{ threat.alert_type }}
+                            </span>
 
-            {% endfor %}
+                        {% else %}
+
+                            <span class="normal">
+                                {{ threat.alert_type }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>{{ threat.username }}</td>
+
+                    <td>-</td>
+
+                    <td>{{ threat.timestamp }}</td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
 
         </table>
 
     </div>
+
+
+    <!-- ================= JAVASCRIPT ================= -->
+
+    <script>
+
+        // Alert sound
+        const alertSound = new Audio(
+            "{{ url_for('static', filename='alert.mp3') }}"
+        );
+
+        alertSound.volume = 0.8;
+
+
+        // Unlock browser audio after first click
+        document.addEventListener("click", function () {
+
+            alertSound.play()
+                .then(() => {
+
+                    alertSound.pause();
+                    alertSound.currentTime = 0;
+
+                    console.log("Audio unlocked");
+
+                })
+                .catch(error => console.log(error));
+
+        }, { once: true });
+
+
+
+        // Connect to Socket.IO server
+
+        const socket = io();
+
+
+        socket.on("connect", function(){
+
+            console.log("Connected to server");
+
+            document.getElementById(
+                "connectionStatus"
+            ).innerHTML =
+                "Connected to Security Server";
+
+        });
+
+
+        socket.on("disconnect", function(){
+
+            console.log("Disconnected");
+
+            document.getElementById(
+                "connectionStatus"
+            ).innerHTML =
+                "Disconnected from Server";
+
+        });
+
+
+
+        // Receive real-time alerts
+
+        socket.on("security_event", function(data){
+
+            console.log("Security Event:", data);
+
+            // Play alert sound
+
+            alertSound.play()
+                .catch(error => {
+                    console.log(
+                        "Audio blocked:",
+                        error
+                    );
+                });
+
+
+            let table =
+                document.getElementById("threatTable");
+
+            let row =
+                document.createElement("tr");
+
+            row.classList.add("new-alert");
+
+
+            let cssClass = "normal";
+
+            if(data.type.includes("BRUTE") ||
+               data.type.includes("MALWARE")){
+
+                cssClass = "critical";
+
+            }
+
+            else if(data.type.includes("FAILED") ||
+                    data.type.includes("SUSPICIOUS")){
+
+                cssClass = "warning";
+
+            }
+
+
+            let now =
+                new Date().toLocaleString();
+
+
+            row.innerHTML = `
+
+                <td>
+                    <span class="${cssClass}">
+                        ${data.type}
+                    </span>
+                </td>
+
+                <td>${data.user}</td>
+
+                <td>${data.ip}</td>
+
+                <td>${now}</td>
+
+            `;
+
+
+            // Add newest alert at top
+
+            table.prepend(row);
+
+
+            // Browser notification
+
+            if(Notification.permission === "granted"){
+
+                new Notification(
+                    "Security Alert",
+                    {
+                        body:
+                        `${data.type} detected from ${data.user}`
+                    }
+                );
+
+            }
+
+        });
+
+
+        // Request browser notification permission
+
+        if(Notification.permission !== "granted"){
+
+            Notification.requestPermission();
+
+        }
+
+    </script>
 
 </body>
 </html>
