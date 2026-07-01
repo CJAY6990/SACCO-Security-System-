@@ -1,25 +1,52 @@
-import sqlite3
+import os
+import psycopg2
+from dotenv import load_dotenv
 
-conn = sqlite3.connect("sacco_security.db")
-cursor = conn.cursor()
+# Load .env file (for VS Code local testing)
+load_dotenv()
 
-# ADD MISSING COLUMNS SAFELY
-try:
-    cursor.execute("ALTER TABLE users ADD COLUMN email TEXT")
-except:
-    print("email already exists")
+DB_URL = os.getenv("DATABASE_URL")
 
-try:
-    cursor.execute("ALTER TABLE users ADD COLUMN phone TEXT")
-except:
-    print("phone already exists")
 
-try:
-    cursor.execute("ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 0")
-except:
-    print("verified already exists")
+def get_conn():
+    if not DB_URL:
+        raise Exception(
+            "DATABASE_URL not set. "
+            "Add it to Render or .env file."
+        )
 
-conn.commit()
-conn.close()
+    try:
+        return psycopg2.connect(DB_URL)
+    except Exception as e:
+        raise Exception(f"Database connection failed: {e}")
 
-print("DATABASE FIXED SUCCESSFULLY")
+
+def check_connection():
+    conn = None
+    cur = None
+
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute("SELECT 1;")
+        result = cur.fetchone()
+
+        print("✅ Database connection OK:", result)
+
+        # Extra useful debug info
+        cur.execute("SELECT version();")
+        print("🟢 PostgreSQL version:", cur.fetchone()[0])
+
+    except Exception as e:
+        print("❌ Connection error:", e)
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+if __name__ == "__main__":
+    check_connection()

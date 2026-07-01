@@ -1,19 +1,30 @@
+import os
+import psycopg2
 from werkzeug.security import generate_password_hash
-from database import get_db_connection
 
-conn = get_db_connection()
+DB_URL = os.environ.get("DATABASE_URL")
 
-member_id = "ADMIN001"
-password = "admin123"
 
-hashed_password = generate_password_hash(password)
+def get_conn():
+    if not DB_URL:
+        raise Exception("DATABASE_URL not set")
+    return psycopg2.connect(DB_URL)
 
-conn.execute("""
-    INSERT INTO users (member_id, password, role)
-    VALUES (?, ?, ?)
-""", (member_id, hashed_password, "admin"))
 
-conn.commit()
-conn.close()
+def create_user(username, email, password, role="user"):
 
-print("Admin user created successfully")
+    conn = get_conn()
+    cur = conn.cursor()
+
+    hashed = generate_password_hash(password)
+
+    cur.execute("""
+        INSERT INTO users (username, email, password, role, status, verified)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (username, email, hashed, role, "active", 1))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    print("User created successfully")

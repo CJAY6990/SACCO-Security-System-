@@ -1,34 +1,155 @@
-<table>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Alerts</title>
 
-    <tr>
-        <th>Alert Type</th>
-        <th>User</th>
-        <th>Description</th>
-        <th>Time</th>
-    </tr>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, Helvetica, sans-serif;
+        }
 
-    {% for alert in alerts %}
-    <tr>
+        body{
+            background:#f4f6f9;
+        }
 
-        <td>
+        .container{
+            width:95%;
+            max-width:1200px;
+            margin:40px auto;
+        }
 
-            {% if alert.alert_type == "USER_REPORT" %}
-                <span style="color:red;">
-                    USER REPORT
-                </span>
-            {% else %}
-                {{ alert.alert_type }}
-            {% endif %}
+        h1{
+            text-align:center;
+            color:#d32f2f;
+            margin-bottom:25px;
+        }
 
-        </td>
+        .top-buttons{
+            display:flex;
+            justify-content:space-between;
+            margin-bottom:20px;
+        }
 
-        <td>{{ alert.username }}</td>
+        .btn{
+            text-decoration:none;
+            padding:10px 18px;
+            border-radius:6px;
+            color:white;
+            font-weight:bold;
+        }
 
-        <td>{{ alert.details }}</td>
+        .back{
+            background:#1976d2;
+        }
 
-        <td>{{ alert.timestamp }}</td>
+        .refresh{
+            background:#388e3c;
+        }
 
-    </tr>
-    {% endfor %}
+        table{
+            width:100%;
+            border-collapse:collapse;
+            background:white;
+            box-shadow:0 2px 10px rgba(0,0,0,.1);
+        }
 
-</table>
+        th{
+            background:#d32f2f;
+            color:white;
+            padding:14px;
+        }
+
+        td{
+            padding:12px;
+            border-bottom:1px solid #ddd;
+            text-align:center;
+        }
+
+        tr:nth-child(even){
+            background:#f8f8f8;
+        }
+
+        tr:hover{
+            background:#eeeeee;
+        }
+
+        .empty{
+            color:#777;
+            font-style:italic;
+            padding:30px;
+        }
+    </style>
+
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Security Alerts</h1>
+
+    <div class="top-buttons">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn back">
+            ← Back
+        </a>
+
+        <a href="{{ url_for('security_alerts') }}" class="btn refresh">
+            Refresh
+        </a>
+    </div>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Alert Type</th>
+                <th>User</th>
+                <th>Description</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+        {% if alerts %}
+
+            {% for alert in alerts %}
+
+            <tr>
+
+                <td>{{ alert.alert_type }}</td>
+
+                <td>{{ alert.username or "-" }}</td>
+
+                <td>{{ alert.details }}</td>
+
+                <td>{{ alert.timestamp }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        {% else %}
+
+            <tr>
+
+                <td colspan="4" class="empty">
+                    No security alerts found.
+                </td>
+
+            </tr>
+
+        {% endif %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+</body>
+</html>

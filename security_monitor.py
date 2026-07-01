@@ -1,55 +1,80 @@
-import time
-from collections import defaultdict
+import os
+import psycopg2
+from datetime import datetime
+from dotenv import load_dotenv
 
-# Track requests per IP
-ip_request_log = defaultdict(list)
-
-# Track login failures
-failed_logins = defaultdict(list)
+load_dotenv()
 
 
+def get_conn():
+    db_url = os.getenv("DATABASE_URL")
 
-def is_suspicious_traffic(ip_address, limit=20, window=60):
+    if not db_url:
+        raise Exception("DATABASE_URL is not set.")
 
-    now = time.time()
+    return psycopg2.connect(db_url)
 
-    ip_request_log[ip_address].append(now)
+# --------------------------------------------------
+# FAILED LOGIN TRACKING
+# --------------------------------------------------
 
-    # keep only last 60 seconds
-    ip_request_log[ip_address] = [
-        t for t in ip_request_log[ip_address]
-        if now - t < window
-    ]
+def record_failed_login(ip, username):
 
-    if len(ip_request_log[ip_address]) > limit:
-        return True
+    conn = get_conn()
+    cur = conn.cursor()
 
-    return False
+    cur.execute("""
+        INSERT INTO failed_logins (ip_address, username, attempt_time)
+        VALUES (%s, %s, %s)
+    """, (ip, username, datetime.now()))
 
-
-
-def detect_bruteforce(ip_address, member_id, limit=5, window=300):
-
-    now = time.time()
-
-    key = f"{ip_address}:{member_id}"
-
-    failed_logins[key].append(now)
-
-    # keep last 5 min
-    failed_logins[key] = [
-        t for t in failed_logins[key]
-        if now - t < window
-    ]
-
-    if len(failed_logins[key]) >= limit:
-        return True
-
-    return False
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
+# --------------------------------------------------
+# BRUTE FORCE DETECTION (simple logic)
+# --------------------------------------------------
 
-def record_failed_login(ip_address, member_id):
-    key = f"{ip_address}:{member_id}"
-    failed_logins[key].append(time.time())
-    
+def detect_bruteforce(ip, username):
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM failed_logins
+        WHERE ip_address=%s AND username=%s
+    """, (ip, username))
+
+    count = cur.fetchone()[0]
+
+    cur.close()
+    conn.close()
+
+    return count >= 5
+
+
+# --------------------------------------------------
+# SUSPICIOUS TRAFFIC
+# --------------------------------------------------
+
+def is_suspicious_traffic(ip):
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM failed_logins
+        WHERE ip_address=%s
+        AND attempt_time > NOW() - INTERVAL '2 minutes'
+    """, (ip,))
+
+    count = cur.fetchone()[0]
+
+    cur.close()
+    conn.close()
+
+    return count > 10

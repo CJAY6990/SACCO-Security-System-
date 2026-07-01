@@ -1,19 +1,22 @@
 import requests
 
-URL = "http://127.0.0.1:5000/login"
+def simulate_bruteforce(url, username, password_list):
 
-fake_attempts = [
-    ("admin", "123"),
-    ("test", "wrong"),
-    ("guest", "password"),
-]
+    print("Starting attack simulation...")
 
-for member_id, password in fake_attempts:
+    for password in password_list:
 
-    r = requests.post(URL, data={
-        "member_id": member_id,
-        "password": password
-    })
+        data = {
+            "username": username,
+            "password": password
+        }
 
-    print(f"Attempted {member_id}")
-    
+        r = requests.post(url, data=data)
+
+        print(f"Trying {password} -> {r.status_code}")
+
+        if "dashboard" in r.text.lower():
+            print("Login bypass detected (weak system)")
+            break
+
+    print("Simulation complete")

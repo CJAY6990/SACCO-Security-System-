@@ -1,64 +1,154 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Report Suspicious Activity</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Suspicious Activity</title>
 
-    <style>
-        body{
-            font-family:Arial;
-            background:#f4f6f9;
-            margin:0;
-        }
+<style>
 
-        .container{
-            width:50%;
-            margin:80px auto;
-            background:white;
-            padding:30px;
-            border-radius:10px;
-            box-shadow:0 2px 10px rgba(0,0,0,0.1);
-            text-align:center;
-        }
+body{
+    margin:0;
+    background:#0f172a;
+    font-family:Arial,Helvetica,sans-serif;
+    color:white;
+}
 
-        textarea{
-            width:90%;
-            height:150px;
-            padding:10px;
-            margin-top:20px;
-        }
+.container{
+    width:700px;
+    margin:40px auto;
+    background:#1e293b;
+    padding:30px;
+    border-radius:12px;
+}
 
-        button{
-            margin-top:20px;
-            padding:12px 20px;
-            background:#2563eb;
-            color:white;
-            border:none;
-            cursor:pointer;
-            border-radius:6px;
-        }
+h2{
+    text-align:center;
+    margin-bottom:25px;
+}
 
-        button:hover{
-            background:#1d4ed8;
-        }
-    </style>
+label{
+    display:block;
+    margin-top:15px;
+    margin-bottom:5px;
+    font-weight:bold;
+}
+
+input,select,textarea{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:6px;
+    box-sizing:border-box;
+    font-size:15px;
+}
+
+textarea{
+    height:180px;
+    resize:vertical;
+}
+
+button{
+    margin-top:25px;
+    width:100%;
+    padding:14px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:6px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+.error{
+    background:#dc2626;
+    padding:12px;
+    border-radius:6px;
+    margin-bottom:15px;
+    text-align:center;
+}
+
+.flash{
+    background:#16a34a;
+    padding:12px;
+    border-radius:6px;
+    margin-bottom:15px;
+    text-align:center;
+}
+
+a{
+    color:#60a5fa;
+    text-decoration:none;
+}
+
+</style>
+
 </head>
-
 <body>
 
 <div class="container">
 
-    <h2>Report Suspicious Activity</h2>
+<h2>Report Suspicious Activity</h2>
 
-    <form method="POST">
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
 
-        <textarea name="details"
-                  placeholder="Describe the suspicious activity..."></textarea>
+{% with messages=get_flashed_messages() %}
+{% if messages %}
+{% for msg in messages %}
+<div class="flash">{{ msg }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
 
-        <br>
+<form method="POST">
 
-        <button type="submit">Submit Report</button>
+<label>Incident Title</label>
+<input
+type="text"
+name="subject"
+placeholder="Example: Suspicious Login Attempt"
+required>
 
-    </form>
+<label>Category</label>
+
+<select name="category" required>
+
+<option value="">Select Category</option>
+
+<option>Unauthorized Login</option>
+
+<option>Malware</option>
+
+<option>Wireless Attack</option>
+
+<option>Phishing</option>
+
+<option>Suspicious Network Activity</option>
+
+<option>System Bug</option>
+
+<option>Other</option>
+
+</select>
+
+<label>Description</label>
+
+<textarea
+name="message"
+placeholder="Describe the suspicious activity in detail..."
+required></textarea>
+
+<button type="submit">
+Submit Report
+</button>
+
+</form>
 
 </div>
 

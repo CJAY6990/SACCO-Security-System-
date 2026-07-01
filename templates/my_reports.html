@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Reports</title>
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, Helvetica, sans-serif;
+        }
+
+        body{
+            background:#f4f6f9;
+        }
+
+        header{
+            background:#0d47a1;
+            color:#fff;
+            padding:20px;
+            text-align:center;
+            font-size:28px;
+            font-weight:bold;
+        }
+
+        .container{
+            width:95%;
+            max-width:1200px;
+            margin:30px auto;
+        }
+
+        .top-bar{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            margin-bottom:25px;
+            gap:10px;
+        }
+
+        .btn{
+            background:#1565c0;
+            color:white;
+            text-decoration:none;
+            padding:10px 18px;
+            border-radius:6px;
+            transition:.3s;
+            font-weight:bold;
+        }
+
+        .btn:hover{
+            background:#0d47a1;
+        }
+
+        .report-card{
+            background:white;
+            border-radius:10px;
+            padding:20px;
+            margin-bottom:20px;
+            box-shadow:0 4px 12px rgba(0,0,0,.12);
+            border-left:6px solid #1565c0;
+        }
+
+        .report-card h3{
+            color:#0d47a1;
+            margin-bottom:10px;
+        }
+
+        .row{
+            margin:8px 0;
+        }
+
+        .label{
+            font-weight:bold;
+            color:#333;
+        }
+
+        .status{
+            display:inline-block;
+            padding:5px 12px;
+            border-radius:20px;
+            color:white;
+            font-size:13px;
+            font-weight:bold;
+        }
+
+        .Pending{
+            background:#f39c12;
+        }
+
+        .InProgress{
+            background:#2980b9;
+        }
+
+        .Resolved{
+            background:#27ae60;
+        }
+
+        .Closed{
+            background:#7f8c8d;
+        }
+
+        .response{
+            margin-top:15px;
+            background:#eef6ff;
+            padding:15px;
+            border-left:5px solid #1565c0;
+            border-radius:6px;
+        }
+
+        .response h4{
+            margin-bottom:10px;
+            color:#0d47a1;
+        }
+
+        .empty{
+            text-align:center;
+            padding:60px;
+            background:white;
+            border-radius:10px;
+            box-shadow:0 4px 12px rgba(0,0,0,.1);
+            color:#777;
+        }
+
+        @media(max-width:768px){
+
+            .top-bar{
+                flex-direction:column;
+                align-items:flex-start;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<header>
+    My Submitted Reports
+</header>
+
+<div class="container">
+
+    <div class="top-bar">
+
+        <h2>Report History</h2>
+
+        <div>
+
+            <a href="{{ url_for('report_activity') }}" class="btn">
+                + New Report
+            </a>
+
+            <a href="{{ url_for('dashboard') }}" class="btn">
+                Dashboard
+            </a>
+
+        </div>
+
+    </div>
+
+    {% if reports %}
+
+        {% for report in reports %}
+
+        <div class="report-card">
+
+            <h3>{{ report.subject if report.subject is defined else report[1] }}</h3>
+
+            <div class="row">
+                <span class="label">Category:</span>
+                {{ report.category if report.category is defined else report[2] }}
+            </div>
+
+            <div class="row">
+                <span class="label">Message:</span><br><br>
+                {{ report.message if report.message is defined else report[3] }}
+            </div>
+
+            {% set status = report.status if report.status is defined else report[4] %}
+
+            <div class="row">
+                <span class="label">Status:</span>
+
+                <span class="status {{ status.replace(' ','') }}">
+                    {{ status }}
+                </span>
+
+            </div>
+
+            <div class="row">
+                <span class="label">Submitted:</span>
+                {{ report.created_at if report.created_at is defined else report[6] }}
+            </div>
+
+            {% set response = report.admin_response if report.admin_response is defined else report[5] %}
+
+            {% if response %}
+
+            <div class="response">
+
+                <h4>Administrator Response</h4>
+
+                <p>{{ response }}</p>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="empty">
+
+            <h2>No reports submitted yet.</h2>
+
+            <br>
+
+            <p>Click <strong>New Report</strong> to communicate with the system administrators.</p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>

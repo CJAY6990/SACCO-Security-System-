@@ -2,83 +2,33 @@ from werkzeug.security import check_password_hash
 from database import get_db_connection
 
 
-def authenticate_user(username, password, ip_address=None):
+def authenticate_user(username, password, ip=None):
 
     conn = get_db_connection()
+    cur = conn.cursor()
 
-    user = conn.execute("""
-        SELECT *
+    cur.execute("""
+        SELECT username, password, role, status
         FROM users
-        WHERE username = ?
-    """, (username,)).fetchone()
+        WHERE username = %s
+    """, (username,))
 
-    # User not found
-    if not user:
+    user = cur.fetchone()
 
-        conn.execute("""
-            INSERT INTO login_logs
-            (username, status, reason, ip_address)
-            VALUES (?, ?, ?, ?)
-        """, (
-            username,
-            "FAILED",
-            "User not found",
-            ip_address
-        ))
-
-        conn.commit()
-        conn.close()
-        return None
-
-    # Account blocked
-    if user["status"] == "blocked":
-
-        conn.execute("""
-            INSERT INTO login_logs
-            (username, status, reason, ip_address)
-            VALUES (?, ?, ?, ?)
-        """, (
-            username,
-            "FAILED",
-            "Account blocked",
-            ip_address
-        ))
-
-        conn.commit()
-        conn.close()
-        return None
-
-    # Wrong password
-    if not check_password_hash(user["password"], password):
-
-        conn.execute("""
-            INSERT INTO login_logs
-            (username, status, reason, ip_address)
-            VALUES (?, ?, ?, ?)
-        """, (
-            username,
-            "FAILED",
-            "Invalid password",
-            ip_address
-        ))
-
-        conn.commit()
-        conn.close()
-        return None
-
-    # Successful login
-    conn.execute("""
-        INSERT INTO login_logs
-        (username, status, reason, ip_address)
-        VALUES (?, ?, ?, ?)
-    """, (
-        username,
-        "SUCCESS",
-        "Login successful",
-        ip_address
-    ))
-
-    conn.commit()
+    cur.close()
     conn.close()
 
-    return user
+    if not user:
+        return None
+
+    if user["status"] == "blocked":
+        return {"status": "blocked"}
+
+    if check_password_hash(user["password"], password):
+        return {
+            "username": user["username"],
+            "role": user["role"],
+            "status": user["status"]
+        }
+
+    return None

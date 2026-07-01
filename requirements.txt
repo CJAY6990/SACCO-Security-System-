@@ -23,8 +23,10 @@ jwt==1.4.0
 MarkupSafe==3.0.3
 packaging==26.2
 pillow==12.2.0
+psycopg2-binary==2.9.12
 pycparser==3.0
 PyOTP==2.10.0
+python-dotenv==1.2.2
 python-engineio==4.13.2
 python-socketio==5.16.2
 qrcode==8.2

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>User Reports</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0f172a;
+color:white;
+}
+
+.container{
+width:95%;
+margin:auto;
+padding:30px;
+}
+
+h2{
+margin-bottom:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:#1e293b;
+}
+
+th{
+background:#2563eb;
+padding:14px;
+}
+
+td{
+padding:12px;
+border-bottom:1px solid #334155;
+text-align:center;
+}
+
+tr:hover{
+background:#334155;
+}
+
+.pending{
+color:orange;
+font-weight:bold;
+}
+
+.resolved{
+color:#22c55e;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>User Submitted Reports</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>ID</th>
+
+<th>User</th>
+
+<th>Subject</th>
+
+<th>Category</th>
+
+<th>Description</th>
+
+<th>Status</th>
+
+<th>Submitted</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for report in reports %}
+
+<tr>
+
+<td>{{ report.id }}</td>
+
+<td>{{ report.username }}</td>
+
+<td>{{ report.subject }}</td>
+
+<td>{{ report.category }}</td>
+
+<td>{{ report.message }}</td>
+
+<td>
+
+{% if report.status=="Pending" %}
+
+<span class="pending">
+{{ report.status }}
+</span>
+
+{% else %}
+
+<span class="resolved">
+{{ report.status }}
+</span>
+
+{% endif %}
+
+</td>
+
+<td>{{ report.created_at }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</body>
+</html>
