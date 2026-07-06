@@ -17,9 +17,6 @@ env/
 *.sqlite
 *.sqlite3
 
-# Uploads (generated at runtime)
-uploads/
-uploads/*
 
 # Logs
 *.log
