@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Security Monitoring System - Admin Dashboard</title>
 
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
 
     <style>
 
@@ -486,9 +486,8 @@ function initializeLoader() {
     });
 }
 
-window.addEventListener("load", () => {
-    setTimeout(hideLoader, 250);
-});
+document.addEventListener("DOMContentLoaded", hideLoader);
+window.addEventListener("load", hideLoader);
 window.addEventListener("pageshow", () => {
     hideLoader();
 });
@@ -500,14 +499,33 @@ window.addEventListener("visibilitychange", () => {
 
 initializeLoader();
 
-const socket = io();
+let socket;
 
-socket.on("security_event", function(data){
+function initializeSocket() {
+    if (socket && !socket.disconnected) {
+        return;
+    }
 
-    let container =
-        document.getElementById(
-            "notification-container"
-        );
+    socket = io();
+
+    socket.on("connect", function() {
+        console.log("Connected to server");
+    });
+
+    socket.on("disconnect", function() {
+        console.log("Disconnected from server");
+    });
+
+    socket.on("connect_error", function(err) {
+        console.warn("Socket connect error:", err);
+    });
+
+    socket.on("security_event", function(data){
+
+        let container =
+            document.getElementById(
+                "notification-container"
+            );
 
     let notification =
         document.createElement("div");

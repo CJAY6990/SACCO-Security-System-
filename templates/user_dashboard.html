@@ -467,9 +467,8 @@ function initializeLoader() {
     });
 }
 
-window.addEventListener("load", () => {
-    setTimeout(hideLoader, 250);
-});
+document.addEventListener("DOMContentLoaded", hideLoader);
+window.addEventListener("load", hideLoader);
 window.addEventListener("pageshow", () => {
     hideLoader();
 });

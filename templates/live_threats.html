@@ -6,7 +6,7 @@
     <title>Live Threat Feed</title>
 
     <!-- Socket.IO -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
 
     <style>
         *{
@@ -252,10 +252,16 @@
 
         // Connect to Socket.IO server
 
-        const socket = io();
+        let socket;
 
+        function initializeSocket() {
+            if (socket && !socket.disconnected) {
+                return;
+            }
 
-        socket.on("connect", function(){
+            socket = io();
+
+            socket.on("connect", function(){
 
             console.log("Connected to server");
 
@@ -365,6 +371,19 @@
 
         });
 
+        window.addEventListener("pageshow", function(event) {
+            if (event.persisted || !socket || socket.disconnected) {
+                initializeSocket();
+            }
+        });
+
+        window.addEventListener("pagehide", function() {
+            if (socket) {
+                socket.disconnect();
+            }
+        });
+
+        initializeSocket();
 
         // Request browser notification permission
 
