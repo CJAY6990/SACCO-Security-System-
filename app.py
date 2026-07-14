@@ -101,8 +101,15 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-key-change-me")
 
 # Mail Configuration
 app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")
-app.config["MAIL_PORT"] = int(os.getenv("MAIL_PORT"))
-app.config["MAIL_USE_TLS"] = os.getenv("MAIL_USE_TLS") == "True"
+# Provide safe defaults in case environment variables are missing or invalid
+# default to 587 (common submission port) when MAIL_PORT isn't set or invalid
+try:
+    app.config["MAIL_PORT"] = int(os.getenv("MAIL_PORT", "587"))
+except (TypeError, ValueError):
+    print("Warning: MAIL_PORT is invalid or unset, defaulting to 587")
+    app.config["MAIL_PORT"] = 587
+# Accept common truthy values for MAIL_USE_TLS
+app.config["MAIL_USE_TLS"] = os.getenv("MAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
 app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
 app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
 app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER")
