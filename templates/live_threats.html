@@ -5,118 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Threat Feed</title>
 
-    <!-- Socket.IO -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/live_threats.css') }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/live_threats.css') }}">
+
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
-
-    <style>
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family:'Segoe UI', Arial, sans-serif;
-        }
-
-        body{
-            background:linear-gradient(135deg, #07111f 0%, #0f172a 45%, #111827 100%);
-            color:#e5eefb;
-        }
-
-        .navbar{
-            background:rgba(2, 8, 23, 0.96);
-            padding:15px;
-            text-align:center;
-            border-bottom:1px solid rgba(96, 165, 250, 0.2);
-        }
-
-        .navbar a{
-            color:white;
-            text-decoration:none;
-            margin:0 15px;
-            font-weight:bold;
-        }
-
-        .navbar a:hover{
-            color:#60a5fa;
-        }
-
-        .container{
-            width:95%;
-            margin:30px auto;
-            max-width:1200px;
-        }
-
-        h1{
-            text-align:center;
-            color:#f8fafc;
-            margin-bottom:10px;
-        }
-
-        .status{
-            text-align:center;
-            font-weight:bold;
-            margin-bottom:20px;
-            color:#4ade80;
-        }
-
-        table{
-            width:100%;
-            border-collapse:collapse;
-            background:rgba(15, 23, 42, 0.92);
-            box-shadow:0 14px 30px rgba(2, 8, 23, 0.28);
-        }
-
-        th{
-            background:#1e293b;
-            color:white;
-            padding:12px;
-        }
-
-        td{
-            padding:12px;
-            border-bottom:1px solid rgba(148, 163, 184, 0.2);
-            text-align:center;
-            color:#cbd5e1;
-        }
-
-        tr:hover{
-            background:rgba(37, 99, 235, 0.08);
-        }
-
-        .critical{
-            color:#f87171;
-            font-weight:bold;
-        }
-
-        .warning{
-            color:#fb923c;
-            font-weight:bold;
-        }
-
-        .normal{
-            color:#4ade80;
-            font-weight:bold;
-        }
-
-        /* ================= FLASH ANIMATION ================= */
-
-        .new-alert{
-            animation:flash 1.5s ease-in-out;
-        }
-
-        @keyframes flash{
-            0%{
-                background:#fee2e2;
-            }
-
-            50%{
-                background:#ffffff;
-            }
-
-            100%{
-                background:#fee2e2;
-            }
-        }
-    </style>
+    <script>const ALERT_AUDIO_URL = "{{ url_for('static', filename='alert.mp3') }}";</script>
+    <script src="{{ url_for('static', filename='js/live_threats.js') }}" defer></script>
 </head>
 
 <body>
@@ -262,114 +159,87 @@
             socket = io();
 
             socket.on("connect", function(){
+                console.log("Connected to server");
 
-            console.log("Connected to server");
+                document.getElementById(
+                    "connectionStatus"
+                ).innerHTML =
+                    "Connected to Security Server";
+            });
 
-            document.getElementById(
-                "connectionStatus"
-            ).innerHTML =
-                "Connected to Security Server";
+            socket.on("disconnect", function(){
+                console.log("Disconnected");
 
-        });
+                document.getElementById(
+                    "connectionStatus"
+                ).innerHTML =
+                    "Disconnected from Server";
+            });
 
+            // Receive real-time alerts
+            socket.on("security_event", function(data){
+                console.log("Security Event:", data);
 
-        socket.on("disconnect", function(){
+                // Play alert sound
+                alertSound.play()
+                    .catch(error => {
+                        console.log(
+                            "Audio blocked:",
+                            error
+                        );
+                    });
 
-            console.log("Disconnected");
+                let table =
+                    document.getElementById("threatTable");
 
-            document.getElementById(
-                "connectionStatus"
-            ).innerHTML =
-                "Disconnected from Server";
+                let row =
+                    document.createElement("tr");
 
-        });
+                row.classList.add("new-alert");
 
+                let cssClass = "normal";
 
+                if(data.type.includes("BRUTE") ||
+                   data.type.includes("MALWARE")){
+                    cssClass = "critical";
+                }
+                else if(data.type.includes("FAILED") ||
+                        data.type.includes("SUSPICIOUS")){
+                    cssClass = "warning";
+                }
 
-        // Receive real-time alerts
+                let now =
+                    new Date().toLocaleString();
 
-        socket.on("security_event", function(data){
+                row.innerHTML = `
+                    <td>
+                        <span class="${cssClass}">
+                            ${data.type}
+                        </span>
+                    </td>
+                    <td>${data.user}</td>
+                    <td>${data.ip}</td>
+                    <td>${now}</td>
+                `;
 
-            console.log("Security Event:", data);
+                // Add newest alert at top
+                table.prepend(row);
 
-            // Play alert sound
+                // Browser notification
+                if(Notification.permission === "granted"){
 
-            alertSound.play()
-                .catch(error => {
-                    console.log(
-                        "Audio blocked:",
-                        error
+                    new Notification(
+                        "Security Alert",
+                        {
+                            body:
+                            `${data.type} detected from ${data.user}`
+                        }
                     );
-                });
 
+                }
 
-            let table =
-                document.getElementById("threatTable");
-
-            let row =
-                document.createElement("tr");
-
-            row.classList.add("new-alert");
-
-
-            let cssClass = "normal";
-
-            if(data.type.includes("BRUTE") ||
-               data.type.includes("MALWARE")){
-
-                cssClass = "critical";
-
-            }
-
-            else if(data.type.includes("FAILED") ||
-                    data.type.includes("SUSPICIOUS")){
-
-                cssClass = "warning";
-
-            }
-
-
-            let now =
-                new Date().toLocaleString();
-
-
-            row.innerHTML = `
-
-                <td>
-                    <span class="${cssClass}">
-                        ${data.type}
-                    </span>
-                </td>
-
-                <td>${data.user}</td>
-
-                <td>${data.ip}</td>
-
-                <td>${now}</td>
-
-            `;
-
-
-            // Add newest alert at top
-
-            table.prepend(row);
-
-
-            // Browser notification
-
-            if(Notification.permission === "granted"){
-
-                new Notification(
-                    "Security Alert",
-                    {
-                        body:
-                        `${data.type} detected from ${data.user}`
-                    }
-                );
-
-            }
-
-        });
+            });
+        }
 
         window.addEventListener("pageshow", function(event) {
             if (event.persisted || !socket || socket.disconnected) {
