@@ -1,4 +1,9 @@
 import os
+import re
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+from functools import wraps
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -6,23 +11,86 @@ load_dotenv()
 print("DATABASE_URL:", os.getenv("DATABASE_URL"))
 
 from flask import (
-    Flask, render_template, request,
-    redirect, session, url_for, flash
+    Flask,
+    render_template,
+    request,
+    redirect,
+    session,
+    url_for,
+    flash
 )
 
+from flask_mail import Mail
 from flask_socketio import SocketIO
-from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
-import re
+
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
+
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
+
 from psycopg2.extras import RealDictCursor
-from database import get_db_connection, get_user_count
+
 from auth import authenticate_user
+
 from malware_engine import analyze_uploaded_file
+
 from security_monitor import (
     is_suspicious_traffic,
     detect_bruteforce,
     record_failed_login
 )
+
+from mail_utils import (
+    generate_otp,
+    send_otp_email
+)
+
+from database import (
+    get_connection,
+    get_db_connection,
+    get_user,
+    get_user_count,
+    get_user_by_email,
+    get_profile,
+    update_profile,
+    save_otp,
+    verify_otp,
+    clear_otp
+)
+
+
+from database import (
+    get_user_dashboard,
+    get_last_login,
+    get_total_logins,
+    get_profile,
+    update_profile,
+    update_profile_photo
+)
+
+# ======================================================
+# Kenya Time Zone
+# ======================================================
+from datetime import timezone, timedelta
+
+KENYA_TZ = timezone(timedelta(hours=3))
+
+# ======================================================
+# Upload Configuration
+# ======================================================
+
+UPLOAD_FOLDER = "uploads/profiles"
+
+ALLOWED_EXTENSIONS = {
+    "png",
+    "jpg",
+    "jpeg",
+    "gif"
+}
+
 
 # =====================================================
 # APP INIT
@@ -31,12 +99,26 @@ from security_monitor import (
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-key-change-me")
 
+# Mail Configuration
+app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")
+app.config["MAIL_PORT"] = int(os.getenv("MAIL_PORT"))
+app.config["MAIL_USE_TLS"] = os.getenv("MAIL_USE_TLS") == "True"
+app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
+app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
+app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER")
+
+mail = Mail(app)
+
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
+app.config["UPLOAD_FOLDER"] = os.path.join(
+    app.root_path,
+    "uploads",
+    "profiles"
+)
 
 # =====================================================
 # HELPERS
@@ -53,7 +135,7 @@ def emit_event(event_type, username, ip):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-
+               
         cur.execute("""
             INSERT INTO security_alerts
             (alert_type, username, details)
@@ -73,19 +155,32 @@ def emit_event(event_type, username, ip):
         print(e)
 
 def log_activity(username, action, ip):
-    conn = get_db_connection()
-    cur = conn.cursor()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
 
-    cur.execute("""
-        INSERT INTO activities
-        (username, action, ip_address)
-        VALUES (%s, %s, %s)
-    """, (username, action, ip))
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS activities (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(150),
+                action TEXT,
+                ip_address VARCHAR(100),
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-    conn.commit()
+        cur.execute("""
+            INSERT INTO activities
+            (username, action, ip_address)
+            VALUES (%s, %s, %s)
+        """, (username, action, ip))
 
-    cur.close()
-    conn.close()
+        conn.commit()
+
+        cur.close()
+        conn.close()
+    except Exception as exc:
+        print("Activity logging error:", exc)
 
 def role_required(roles):
     def decorator(f):
@@ -103,6 +198,39 @@ def role_required(roles):
         return wrapper
     return decorator
 
+def allowed_file(filename):
+
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower()
+        in ALLOWED_EXTENSIONS
+    )
+
+def kenya_time(dt):
+
+    if not dt:
+        return ""
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+
+    return dt.astimezone(
+        KENYA_TZ
+    ).strftime("%d %b %Y %I:%M %p")
+
+app.jinja_env.filters["kenya_time"] = kenya_time
+
+from functools import wraps
+from flask import session, redirect, url_for
+
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if "username" not in session:
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return wrapper
+
 # =====================================================
 # HOME
 # =====================================================
@@ -117,18 +245,52 @@ def home():
 # =====================================================
 
 def log_login(username, status, reason, ip):
-    conn = get_db_connection()
-    cur = conn.cursor()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
 
-    cur.execute("""
-        INSERT INTO login_logs (username, status, reason, ip_address)
-        VALUES (%s, %s, %s, %s)
-    """, (username, status, reason, ip))
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS login_logs (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(150),
+                status VARCHAR(50),
+                reason TEXT,
+                ip_address VARCHAR(100),
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-    conn.commit()
-    cur.close()
-    conn.close()
+        cur.execute("""
+            INSERT INTO login_logs (username, status, reason, ip_address)
+            VALUES (%s, %s, %s, %s)
+        """, (username, status, reason, ip))
 
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as exc:
+        print("Login logging error:", exc)
+
+
+def seed_user_activity(username):
+    if not username:
+        return
+
+    log_activity(username, "Viewed dashboard", "127.0.0.1")
+    log_activity(username, "Updated security profile", "127.0.0.1")
+    log_activity(username, "Submitted security report", "127.0.0.1")
+
+
+def seed_demo_activities():
+    demo_username = "Demo Analyst"
+    demo_actions = [
+        "Reviewed suspicious login pattern",
+        "Acknowledged demo threat alert",
+        "Submitted demo security report"
+    ]
+
+    for action in demo_actions:
+        log_activity(demo_username, action, "10.0.0.12")
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
@@ -144,7 +306,13 @@ def login():
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("""
-            SELECT username, password, role, status
+            SELECT
+                username,
+                email,
+                password,
+                role,
+                status,
+                verified
             FROM users
             WHERE username = %s
         """, (username,))
@@ -154,37 +322,105 @@ def login():
         cur.close()
         conn.close()
 
-        if not user:
-            print("[LOGIN FAIL] user not found")
-            log_login(username, "FAILED", "User not found", ip)
-            return render_template("login.html", error="User not found")
+        # -------------------------
+        # User not found
+        # -------------------------
 
-     
+        if not user:
+
+            log_login(username, "FAILED", "User not found", ip)
+
+            return render_template(
+                "login.html",
+                error="Invalid username or password."
+            )
+
+        # -------------------------
+        # Account blocked
+        # -------------------------
 
         if user["status"] != "active":
-           
-            log_login(username, "BLOCKED", "Account not active", ip)
-            return render_template("login.html", error="Account blocked")
 
-        
+            log_login(
+                username,
+                "BLOCKED",
+                "Account not active",
+                ip
+            )
 
-        if not check_password_hash(user["password"], password):
-            
-            log_login(username, "FAILED", "Wrong password", ip)
-            return render_template("login.html", error="Wrong password")
+            return render_template(
+                "login.html",
+                error="Your account has been blocked."
+            )
 
-       
+        # -------------------------
+        # Email not verified
+        # -------------------------
 
+        if user["verified"] == 0:
+
+            session["verify_email"] = user["email"]
+
+            flash(
+                "Please verify your email before logging in."
+            )
+
+            return redirect(
+                url_for("verify_otp")
+            )
+
+        # -------------------------
+        # Wrong password
+        # -------------------------
+
+        if not check_password_hash(
+            user["password"],
+            password
+        ):
+
+            log_login(
+                username,
+                "FAILED",
+                "Wrong password",
+                ip
+            )
+
+            return render_template(
+                "login.html",
+                error="Invalid username or password."
+            )
+
+        # -------------------------
+        # Successful login
+        # -------------------------
+
+        session.clear()
         session["username"] = user["username"]
         session["role"] = user["role"]
 
-        log_login(username, "SUCCESS", "Login successful", ip)
-        log_activity(username, "login", ip)
+        log_login(
+            username,
+            "SUCCESS",
+            "Login successful",
+            ip
+        )
 
-        return redirect(url_for("dashboard"))
+        log_activity(
+            username,
+            "login",
+            ip
+        )
 
-    return render_template("login.html", error=error)
+        seed_user_activity(username)
 
+        return redirect(
+            url_for("dashboard")
+        )
+
+    return render_template(
+        "login.html",
+        error=error
+    )
 # =====================================================
 # SIGNUP
 # =====================================================
@@ -196,15 +432,14 @@ def signup():
 
     if request.method == "POST":
 
-        # Clean user input
         username = request.form.get("username", "").strip()
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         confirm = request.form.get("confirm_password", "")
 
-        # ==========================
+        # -------------------------
         # Validation
-        # ==========================
+        # -------------------------
 
         if not username or not email or not password or not confirm:
             error = "All fields are required."
@@ -230,15 +465,17 @@ def signup():
             cur = conn.cursor()
 
             try:
-                # Check if username or email already exists
+
+                # Check existing username/email
                 cur.execute("""
                     SELECT id
                     FROM users
-                    WHERE TRIM(username) = %s
-                       OR LOWER(email) = %s
+                    WHERE TRIM(username)=%s
+                       OR LOWER(email)=%s
                 """, (username, email))
 
                 if cur.fetchone():
+
                     error = "Username or email already exists."
 
                 else:
@@ -246,6 +483,10 @@ def signup():
                     role = "super_admin" if get_user_count() == 0 else "user"
 
                     hashed_password = generate_password_hash(password)
+
+                    otp = generate_otp()
+
+                    expiry = datetime.now() + timedelta(minutes=10)
 
                     cur.execute("""
                         INSERT INTO users
@@ -255,10 +496,14 @@ def signup():
                             password,
                             role,
                             status,
-                            verified
+                            verified,
+                            otp_code,
+                            otp_expiry
                         )
                         VALUES
                         (
+                            %s,
+                            %s,
                             %s,
                             %s,
                             %s,
@@ -272,21 +517,37 @@ def signup():
                         hashed_password,
                         role,
                         "active",
-                        1
+                        0,
+                        otp,
+                        expiry
                     ))
 
                     conn.commit()
 
-                    flash("Account created successfully.", "success")
+                    send_otp_email(
+                        mail,
+                        email,
+                        otp
+                    )
 
-                    return redirect(url_for("login"))
+                    session["verify_email"] = email
+
+                    flash(
+                        "An OTP has been sent to your email. Please verify your account."
+                    )
+
+                    return redirect(url_for("verify_otp"))
 
             except Exception as e:
+
                 conn.rollback()
+
                 print("Signup Error:", e)
+
                 error = "Unable to create account."
 
             finally:
+
                 cur.close()
                 conn.close()
 
@@ -295,6 +556,144 @@ def signup():
         error=error
     )
 
+@app.route("/verify_otp", methods=["GET", "POST"])
+def verify_otp():
+
+    if "verify_email" not in session:
+        return redirect(url_for("signup"))
+
+    error = None
+
+    email = session["verify_email"]
+
+    if request.method == "POST":
+
+        otp = request.form.get("otp", "").strip()
+
+        if not otp:
+
+            error = "Please enter the OTP."
+
+        else:
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+
+            try:
+
+                cur.execute("""
+                    SELECT
+                        otp_code,
+                        otp_expiry
+                    FROM users
+                    WHERE email = %s
+                """, (email,))
+
+                user = cur.fetchone()
+
+                if not user:
+
+                    error = "User not found."
+
+                elif datetime.now() > user["otp_expiry"]:
+
+                    error = "OTP has expired."
+
+                elif otp != user["otp_code"]:
+
+                    error = "Invalid OTP."
+
+                else:
+
+                    cur.execute("""
+                        UPDATE users
+                        SET
+                            verified = 1,
+                            otp_code = NULL,
+                            otp_expiry = NULL
+                        WHERE email = %s
+                    """, (email,))
+
+                    conn.commit()
+
+                    session.pop("verify_email", None)
+
+                    flash("Email verified successfully. Please login.")
+
+                    return redirect(url_for("login"))
+
+            except Exception as e:
+
+                conn.rollback()
+
+                print("OTP Verification Error:", e)
+
+                error = "Verification failed."
+
+            finally:
+
+                cur.close()
+                conn.close()
+
+    return render_template(
+        "verify_otp.html",
+        email=email,
+        error=error
+    )
+
+@app.route("/resend_otp")
+def resend_otp():
+
+    if "verify_email" not in session:
+        return redirect(url_for("signup"))
+
+    email = session["verify_email"]
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        otp = generate_otp()
+
+        expiry = datetime.now() + timedelta(minutes=10)
+
+        cur.execute("""
+            UPDATE users
+            SET
+                otp_code = %s,
+                otp_expiry = %s
+            WHERE email = %s
+        """, (
+            otp,
+            expiry,
+            email
+        ))
+
+        conn.commit()
+
+        send_otp_email(
+            mail,
+            email,
+            otp
+        )
+
+        flash("A new OTP has been sent to your email.")
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print("Resend OTP Error:", e)
+
+        flash("Unable to resend OTP.")
+
+    finally:
+
+        cur.close()
+        conn.close()
+
+    return redirect(url_for("verify_otp"))
 
 # =====================================================
 # DASHBOARD ROUTER
@@ -345,6 +744,14 @@ def admin_dashboard():
 
     recent_logs = cur.fetchall()
 
+    cur.execute("""
+        SELECT * FROM security_alerts
+        ORDER BY timestamp DESC
+        LIMIT 5
+    """)
+
+    recent_alerts = cur.fetchall()
+
     cur.close()
     conn.close()
 
@@ -357,6 +764,7 @@ def admin_dashboard():
             "blocked": blocked
         },
         recent_logs=recent_logs,
+        recent_alerts=recent_alerts,
         username=session["username"],
         role=session["role"]
     )
@@ -366,33 +774,276 @@ def admin_dashboard():
 # USER DASHBOARD
 # =====================================================
 
+@app.route("/demo_dashboard")
+def demo_dashboard():
+
+    session["demo_mode"] = True
+    session["preview_username"] = "Demo Analyst"
+    session["preview_role"] = "Demo User"
+    session["preview_email"] = "demo.security@example.com"
+    session["preview_status"] = "active"
+    session["preview_verified"] = True
+    session["preview_total_logins"] = 1
+    session["preview_last_login"] = "Demo Session"
+    session["preview_last_ip"] = "10.0.0.12"
+
+    log_activity(
+        "Demo Analyst",
+        "Entered demo dashboard",
+        request.remote_addr
+    )
+
+    seed_demo_activities()
+
+    return redirect(url_for("user_dashboard"))
+
+
 @app.route("/user_dashboard")
-@role_required(["user"])
 def user_dashboard():
+
+    username = session.get("username")
+
+    if session.get("demo_mode"):
+        demo_activities = [
+            {
+                "timestamp": datetime.now() - timedelta(minutes=5),
+                "action": "Viewed security overview",
+                "ip_address": "10.0.0.12"
+            },
+            {
+                "timestamp": datetime.now() - timedelta(minutes=20),
+                "action": "Reviewed demo reports queue",
+                "ip_address": "10.0.0.12"
+            },
+            {
+                "timestamp": datetime.now() - timedelta(minutes=40),
+                "action": "Checked threat summary",
+                "ip_address": "10.0.0.12"
+            }
+        ]
+
+        return render_template(
+            "user_dashboard.html",
+            user={"username": session.get("preview_username", "Demo Analyst")},
+            username=session.get("preview_username", "Demo Analyst"),
+            email=session.get("preview_email", "demo.security@example.com"),
+            role=session.get("preview_role", "Demo User"),
+            verified=session.get("preview_verified", True),
+            status=session.get("preview_status", "active"),
+            profile_photo=None,
+            created_at=kenya_time(datetime.now()),
+            updated_at="Never",
+            total_logins=session.get("preview_total_logins", 1),
+            last_login=session.get("preview_last_login", "Demo Session"),
+            last_ip=session.get("preview_last_ip", "10.0.0.12"),
+            recent_activities=demo_activities,
+            guest_mode=True
+        )
+
+    if not username:
+        demo_activities = [
+            {
+                "timestamp": datetime.now() - timedelta(minutes=5),
+                "action": "Viewed security overview",
+                "ip_address": "127.0.0.1"
+            },
+            {
+                "timestamp": datetime.now() - timedelta(minutes=20),
+                "action": "Reviewed reports queue",
+                "ip_address": "127.0.0.1"
+            },
+            {
+                "timestamp": datetime.now() - timedelta(minutes=40),
+                "action": "Checked threat summary",
+                "ip_address": "127.0.0.1"
+            }
+        ]
+
+        return render_template(
+            "user_dashboard.html",
+            user={"username": "Guest User"},
+            username="Guest User",
+            email="guest@example.com",
+            role="Guest",
+            verified=True,
+            status="active",
+            profile_photo=None,
+            created_at=kenya_time(datetime.now()),
+            updated_at="Never",
+            total_logins=0,
+            last_login="Never",
+            last_ip="Unknown",
+            recent_activities=demo_activities,
+            guest_mode=True
+        )
+
+    user = get_user_dashboard(username)
+
+    if not user:
+        flash("User not found.")
+        return redirect(url_for("login"))
+
+    last_login = get_last_login(username)
+
+    total_logins = get_total_logins(username)
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT * FROM login_logs
+        SELECT
+            id,
+            username,
+            action,
+            ip_address,
+            timestamp
+        FROM activities
         WHERE username=%s
         ORDER BY timestamp DESC
         LIMIT 10
-    """, (session["username"],))
+    """, (username,))
 
-    my_logs = cur.fetchall()
+    recent_activities = cur.fetchall()
 
     cur.close()
     conn.close()
 
+    last_login_time = "Never"
+
+    last_ip = "Unknown"
+
+    if last_login:
+
+        last_login_time = kenya_time(last_login["timestamp"])
+
+        last_ip = last_login["ip_address"]
+
     return render_template(
         "user_dashboard.html",
-        username=session["username"],
-        role="user",
-        my_logs=my_logs
+
+        user=user,
+
+        username=user["username"],
+
+        email=user["email"],
+
+        role=user["role"],
+
+        verified=user["verified"],
+
+        status=user["status"],
+
+        profile_photo=user["profile_photo"],
+
+        created_at=kenya_time(user["created_at"]),
+
+        updated_at=kenya_time(user["updated_at"])
+        if user["updated_at"]
+        else "Never",
+
+        total_logins=total_logins,
+
+        last_login=last_login_time,
+
+        last_ip=last_ip,
+
+        recent_activities=recent_activities,
+        guest_mode=False
     )
 
+@app.route("/profile", methods=["GET", "POST"])
+@role_required(["user", "admin", "super_admin"])
+def profile():
 
+    username = session["username"]
+
+    if request.method == "POST":
+
+        email = request.form.get("email", "").strip().lower()
+
+        photo = request.files.get("profile_photo")
+
+        # Update email
+        if email:
+            update_profile(username, email)
+
+        # Update profile picture
+        if photo and photo.filename != "":
+
+            filename = secure_filename(photo.filename)
+
+            upload_folder = app.config["UPLOAD_FOLDER"]
+
+            os.makedirs(upload_folder, exist_ok=True)
+
+            filepath = os.path.join(upload_folder, filename)
+
+            photo.save(filepath)
+
+            update_profile_photo(username, filename)
+
+        log_activity(
+            session["username"],
+            "Updated profile",
+            request.remote_addr
+        )
+
+        flash("Profile updated successfully.", "success")
+
+        return redirect(url_for("profile"))
+
+    user = get_profile(username)
+
+    if not user:
+
+        flash("Profile not found.", "danger")
+
+        return redirect(url_for("dashboard"))
+
+    return render_template(
+        "profile.html",
+        user=user
+    )
+
+@app.route("/uploads/profiles/<filename>")
+def uploaded_file(filename):
+
+    return send_from_directory(
+        app.config["UPLOAD_FOLDER"],
+        filename
+    )
+
+@app.route("/edit_profile", methods=["GET", "POST"])
+@role_required(["user", "admin", "super_admin"])
+def edit_profile():
+
+    if request.method == "POST":
+
+        email = request.form.get("email", "").strip()
+
+        if not email:
+            flash("Email is required.")
+            return redirect(url_for("edit_profile"))
+
+        update_profile(
+            session["username"],
+            email
+        )
+
+        flash("Profile updated successfully.")
+
+        return redirect(url_for("profile"))
+
+    user = get_profile(session["username"])
+
+    if not user:
+        flash("Profile not found.")
+        return redirect(url_for("dashboard"))
+
+    return render_template(
+        "edit_profile.html",
+        user=user
+    )
 # =====================================================
 # SECURITY ALERTS
 # =====================================================
@@ -713,62 +1364,110 @@ def user_reports():
         reports=reports
     )
 
-@app.route("/change_password", methods=["GET", "POST"])
-def change_password():
+@app.route("/respond_report/<int:report_id>", methods=["POST"])
+@role_required(["admin", "super_admin"])
+def respond_report(report_id):
 
-    if "username" not in session:
-        return redirect(url_for("login"))
-
-    error = None
+    response = request.form.get("admin_response", "").strip()
+    status = request.form.get("status", "Resolved").strip()
 
     conn = get_db_connection()
     cur = conn.cursor()
 
+    cur.execute("""
+        UPDATE user_reports
+        SET status=%s,
+            admin_response=%s
+        WHERE id=%s
+    """, (status, response or "Resolved without additional notes.", report_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    flash("Report updated successfully.")
+    return redirect(url_for("user_reports"))
+
+@app.route("/forgot_password", methods=["GET", "POST"])
+def forgot_password():
+
+    error = None
+
     if request.method == "POST":
 
-        current = request.form.get("current_password")
-        new = request.form.get("new_password")
-        confirm = request.form.get("confirm_password")
+        email = request.form.get("email", "").strip().lower()
 
-        cur.execute("""
-            SELECT password
-            FROM users
-            WHERE username = %s
-        """, (session["username"],))
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        user = cur.fetchone()
-
-        if not user:
-            error = "User not found"
-
-        elif not check_password_hash(user["password"], current):
-            error = "Current password is incorrect."
-
-        elif new != confirm:
-            error = "Passwords do not match."
-
-        else:
-            hashed = generate_password_hash(new)
+        try:
 
             cur.execute("""
-                UPDATE users
-                SET password = %s
-                WHERE username = %s
-            """, (hashed, session["username"]))
+                SELECT email
+                FROM users
+                WHERE LOWER(email) = %s
+            """, (email,))
 
-            conn.commit()
+            user = cur.fetchone()
+
+            if not user:
+
+                error = "Email address not found."
+
+            else:
+
+                otp = generate_otp()
+
+                expiry = datetime.now() + timedelta(minutes=10)
+
+                cur.execute("""
+                    UPDATE users
+                    SET
+                        otp_code=%s,
+                        otp_expiry=%s
+                    WHERE email=%s
+                """, (
+                    otp,
+                    expiry,
+                    email
+                ))
+
+                conn.commit()
+
+                send_otp_email(
+                    mail,
+                    email,
+                    otp
+                )
+
+                session["reset_email"] = email
+
+                flash(
+                    "A verification code has been sent to your email."
+                )
+
+                return redirect(
+                    url_for("verify_reset_otp")
+                )
+
+        except Exception as e:
+
+            conn.rollback()
+
+            print("Forgot Password Error:", e)
+
+            error = "Unable to process your request."
+
+        finally:
 
             cur.close()
             conn.close()
 
-            flash("Password changed successfully.")
-            return redirect(url_for("dashboard"))
+    return render_template(
+        "forgot_password.html",
+        error=error
+    )
 
-    cur.close()
-    conn.close()
-
-    return render_template("change_password.html", error=error)
- 
 @app.route("/delete_user/<int:user_id>")
 @role_required(["super_admin"])
 def delete_user(user_id):
@@ -841,6 +1540,12 @@ def report_activity():
             conn.commit()
             cur.close()
             conn.close()
+
+            log_activity(
+                session["username"],
+                f"Submitted report: {subject}",
+                request.remote_addr
+            )
 
             flash("Your report has been submitted successfully.")
             return redirect(url_for("user_dashboard"))
@@ -922,7 +1627,6 @@ def unblock_user(user_id):
 # =====================================================
 # UPLOAD SCAN
 # =====================================================
-
 @app.route("/upload_scan", methods=["GET", "POST"])
 @role_required(["user"])
 def upload_scan():
@@ -931,39 +1635,105 @@ def upload_scan():
 
         file = request.files.get("file")
 
-        if not file:
-            flash("No file selected")
+        if not file or file.filename == "":
+            flash("Please select a file.", "danger")
             return redirect(url_for("upload_scan"))
 
-        path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
-        file.save(path)
+        filename = secure_filename(file.filename)
 
-        result = analyze_uploaded_file(path)
+        upload_folder = os.path.join(
+            app.root_path,
+            "uploads",
+            "malware"
+        )
 
-        if result:
+        os.makedirs(upload_folder, exist_ok=True)
 
-            conn = get_db_connection()
-            cur = conn.cursor()
+        filepath = os.path.join(
+            upload_folder,
+            filename
+        )
+
+        file.save(filepath)
+
+        result = analyze_uploaded_file(filepath)
+
+        result["filename"] = filename
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        if result["status"] == "MALICIOUS":
+
+            alert_type = result.get("threat_type", "VIRUS")
 
             cur.execute("""
                 INSERT INTO security_alerts
-                (alert_type, username, details)
-                VALUES (%s, %s, %s)
-            """, ("MALWARE_DETECTED", session["username"], f"Malware in {file.filename}"))
+                (
+                    alert_type,
+                    username,
+                    details
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s
+                )
+            """, (
+                alert_type,
+                session["username"],
+                f"{filename} classified as {alert_type} (Risk Score: {result['risk_score']})"
+            ))
 
             conn.commit()
-            cur.close()
-            conn.close()
 
-            flash("Threat detected")
+            flash("Malicious file detected!", "danger")
+
+        elif result["status"] == "SUSPICIOUS":
+
+            cur.execute("""
+                INSERT INTO security_alerts
+                (
+                    alert_type,
+                    username,
+                    details
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s
+                )
+            """, (
+                "SUSPICIOUS_FILE",
+                session["username"],
+                f"{filename} classified as SUSPICIOUS (Risk Score: {result['risk_score']})"
+            ))
+
+            conn.commit()
+
+            flash("Suspicious file detected.", "warning")
+
         else:
-            flash("File safe")
 
-        return redirect(url_for("upload_scan"))
+            flash("File appears safe.", "success")
+
+        log_activity(
+            session["username"],
+            f"Scanned file {filename} ({result['status']})",
+            request.remote_addr
+        )
+
+        cur.close()
+        conn.close()
+
+        return render_template(
+            "scan_results.html",
+            result=result
+        )
 
     return render_template("upload_scan.html")
-
-
 # =====================================================
 # LOGOUT
 # =====================================================

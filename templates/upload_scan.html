@@ -1,112 +1,268 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Malware File Scanner</title>
 
-    <style>
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family:Arial, sans-serif;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-        body{
-            background:#f4f6f9;
-            height:100vh;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-        }
+<title>Malware Scanner | Security Monitoring System</title>
 
-        .container{
-            width:450px;
-            background:white;
-            padding:40px;
-            border-radius:10px;
-            box-shadow:0 2px 10px rgba(0,0,0,0.1);
-            text-align:center;
-        }
+<style>
 
-        h2{
-            margin-bottom:25px;
-            color:#1f2937;
-        }
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
 
-        input[type="file"]{
-            width:100%;
-            padding:10px;
-            border:1px solid #ccc;
-            border-radius:5px;
-            margin-bottom:20px;
-        }
+body{
 
-        button{
-            width:100%;
-            padding:12px;
-            border:none;
-            border-radius:5px;
-            background:#2563eb;
-            color:white;
-            font-size:16px;
-            cursor:pointer;
-        }
+    background:#eef2f7;
 
-        button:hover{
-            background:#1d4ed8;
-        }
+    display:flex;
 
-        .flash{
-            background:#dcfce7;
-            color:#166534;
-            padding:10px;
-            border-radius:5px;
-            margin-bottom:20px;
-        }
+    justify-content:center;
 
-        a{
-            display:block;
-            margin-top:20px;
-            text-decoration:none;
-            color:#2563eb;
-        }
+    align-items:center;
 
-        a:hover{
-            text-decoration:underline;
-        }
-    </style>
+    min-height:100vh;
+
+}
+
+.container{
+
+    width:500px;
+
+    background:white;
+
+    padding:40px;
+
+    border-radius:12px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,.15);
+
+}
+
+h2{
+
+    text-align:center;
+
+    color:#1e3a8a;
+
+    margin-bottom:10px;
+
+}
+
+.subtitle{
+
+    text-align:center;
+
+    color:#666;
+
+    margin-bottom:30px;
+
+    font-size:14px;
+
+}
+
+.flash{
+
+    padding:12px;
+
+    border-radius:6px;
+
+    margin-bottom:20px;
+
+    background:#dcfce7;
+
+    color:#166534;
+
+    border-left:5px solid #16a34a;
+
+}
+
+.file-box{
+
+    border:2px dashed #2563eb;
+
+    border-radius:8px;
+
+    padding:25px;
+
+    margin-bottom:20px;
+
+    text-align:center;
+
+}
+
+input[type=file]{
+
+    width:100%;
+
+    margin-top:10px;
+
+}
+
+.info{
+
+    margin-top:15px;
+
+    font-size:13px;
+
+    color:#555;
+
+}
+
+button{
+
+    width:100%;
+
+    padding:14px;
+
+    background:#2563eb;
+
+    color:white;
+
+    border:none;
+
+    border-radius:6px;
+
+    font-size:16px;
+
+    cursor:pointer;
+
+}
+
+button:hover{
+
+    background:#1d4ed8;
+
+}
+
+.links{
+
+    margin-top:25px;
+
+    text-align:center;
+
+}
+
+.links a{
+
+    text-decoration:none;
+
+    color:#2563eb;
+
+    font-weight:bold;
+
+}
+
+.links a:hover{
+
+    text-decoration:underline;
+
+}
+
+.notice{
+
+    margin-top:25px;
+
+    padding:15px;
+
+    background:#f8fafc;
+
+    border-left:5px solid #2563eb;
+
+    font-size:13px;
+
+    color:#444;
+
+}
+
+</style>
+
 </head>
+
 <body>
 
-    <div class="container">
+<div class="container">
 
-        <h2>Malware File Scanner</h2>
+<h2>🛡 Malware File Scanner</h2>
 
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="flash">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+<p class="subtitle">
+Scan uploaded files before using them.
+</p>
 
-        <form method="POST" enctype="multipart/form-data">
+{% with messages = get_flashed_messages() %}
 
-            <input type="file" name="file" required>
+{% if messages %}
 
-            <button type="submit">
-                Scan File
-            </button>
+{% for message in messages %}
 
-        </form>
+<div class="flash">
 
-        <a href="{{ url_for('user_dashboard') }}">
-            Back to Dashboard
-        </a>
+{{ message }}
 
-    </div>
+</div>
+
+{% endfor %}
+
+{% endif %}
+
+{% endwith %}
+
+<form method="POST" enctype="multipart/form-data">
+
+<div class="file-box">
+
+<h3>Select File</h3>
+
+<input
+type="file"
+name="file"
+required>
+
+<div class="info">
+
+Supported files:
+PDF, DOCX, DOC, XLSX, ZIP, EXE, BAT, JS, CMD, PS1, JPG, PNG and others.
+
+</div>
+
+</div>
+
+<button type="submit">
+
+Scan File
+
+</button>
+
+</form>
+
+<div class="notice">
+
+<strong>Security Notice</strong><br><br>
+
+Uploaded files are analyzed for malicious signatures,
+high entropy, suspicious extensions, embedded scripts,
+and known malware indicators before a security verdict is returned.
+
+</div>
+
+<div class="links">
+
+<a href="{{ url_for('user_dashboard') }}">
+
+← Back to Dashboard
+
+</a>
+
+</div>
+
+</div>
 
 </body>
+
 </html>

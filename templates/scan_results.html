@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Malware Scan Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+
+        body{
+            margin:0;
+            font-family:Arial, Helvetica, sans-serif;
+            background:#eef2f7;
+        }
+
+        .container{
+            width:850px;
+            margin:40px auto;
+            background:#fff;
+            padding:30px;
+            border-radius:10px;
+            box-shadow:0 5px 20px rgba(0,0,0,.2);
+        }
+
+        h2{
+            text-align:center;
+            color:#1e3a8a;
+            margin-bottom:30px;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            margin-bottom:30px;
+        }
+
+        th{
+            background:#2563eb;
+            color:#fff;
+            padding:12px;
+        }
+
+        td{
+            padding:12px;
+            border:1px solid #ddd;
+        }
+
+        .safe{
+            color:#16a34a;
+            font-weight:bold;
+        }
+
+        .suspicious{
+            color:#d97706;
+            font-weight:bold;
+        }
+
+        .malicious{
+            color:#dc2626;
+            font-weight:bold;
+        }
+
+        ul{
+            margin-top:10px;
+        }
+
+        li{
+            margin-bottom:8px;
+        }
+
+        .buttons{
+            text-align:center;
+            margin-top:35px;
+        }
+
+        .btn{
+            display:inline-block;
+            padding:12px 25px;
+            background:#2563eb;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+            margin:5px;
+        }
+
+        .btn:hover{
+            background:#1d4ed8;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Malware Scan Report</h2>
+
+    <table>
+
+        <tr>
+            <th>Item</th>
+            <th>Result</th>
+        </tr>
+
+        <tr>
+            <td>Filename</td>
+            <td>{{ result.filename }}</td>
+        </tr>
+
+        <tr>
+            <td>Status</td>
+            <td>
+
+                {% if result.status == "SAFE" %}
+                    <span class="safe">{{ result.status }}</span>
+
+                {% elif result.status == "SUSPICIOUS" %}
+                    <span class="suspicious">{{ result.status }}</span>
+
+                {% else %}
+                    <span class="malicious">{{ result.status }}</span>
+
+                {% endif %}
+
+            </td>
+        </tr>
+
+        <tr>
+            <td>Risk Score</td>
+            <td>{{ result.risk_score }}/100</td>
+        </tr>
+
+        <tr>
+            <td>SHA-256</td>
+            <td style="word-break:break-all;">
+                {{ result.sha256 }}
+            </td>
+        </tr>
+
+        <tr>
+            <td>MIME Type</td>
+            <td>{{ result.mime }}</td>
+        </tr>
+
+        <tr>
+            <td>Entropy</td>
+            <td>{{ result.entropy }}</td>
+        </tr>
+
+    </table>
+
+    <h3>Security Findings</h3>
+
+    {% if result.findings %}
+
+        <ul>
+
+            {% for finding in result.findings %}
+
+                <li>{{ finding }}</li>
+
+            {% endfor %}
+
+        </ul>
+
+    {% else %}
+
+        <p>No suspicious indicators were detected.</p>
+
+    {% endif %}
+
+    <div class="buttons">
+
+        <a class="btn" href="{{ url_for('upload_scan') }}">
+            Scan Another File
+        </a>
+
+        <a class="btn" href="{{ url_for('user_dashboard') }}">
+            Back to Dashboard
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -6,14 +6,16 @@
 
     <style>
         body{
-            font-family: Arial, sans-serif;
-            background:#f4f6f9;
+            font-family:'Segoe UI', Arial, sans-serif;
+            background:linear-gradient(135deg, #07111f 0%, #0f172a 45%, #111827 100%);
+            color:#e5eefb;
             margin:0;
         }
 
         .container{
             width:95%;
             margin:30px auto;
+            max-width:1200px;
         }
 
         .header{
@@ -25,47 +27,54 @@
 
         .search-box{
             margin-bottom:20px;
-            background:white;
+            background:rgba(15, 23, 42, 0.9);
             padding:15px;
-            border-radius:8px;
-            box-shadow:0 2px 5px rgba(0,0,0,0.1);
+            border-radius:12px;
+            box-shadow:0 12px 30px rgba(2, 8, 23, 0.28);
+            border:1px solid rgba(96, 165, 250, 0.2);
         }
 
         .search-box input{
-            width:300px;
+            width:320px;
             padding:10px;
-            border:1px solid #ccc;
-            border-radius:5px;
+            border:1px solid rgba(96, 165, 250, 0.3);
+            border-radius:8px;
+            background:rgba(15, 23, 42, 0.8);
+            color:#f8fafc;
         }
 
         .search-box button{
             padding:10px 15px;
             border:none;
-            background:#2563eb;
+            background:linear-gradient(135deg, #2563eb, #3b82f6);
             color:white;
-            border-radius:5px;
+            border-radius:8px;
             cursor:pointer;
         }
 
         table{
             width:100%;
             border-collapse:collapse;
-            background:rgb(203, 201, 226);
+            background:rgba(15, 23, 42, 0.92);
+            box-shadow:0 14px 30px rgba(2, 8, 23, 0.28);
+            border-radius:14px;
+            overflow:hidden;
         }
 
         th{
-            background:#5b7fc8;
-            color:white;
+            background:#1e293b;
+            color:#e2e8f0;
             padding:12px;
         }
 
         td{
             padding:10px;
-            border-bottom:1px solid #ddd;
+            border-bottom:1px solid rgba(148, 163, 184, 0.2);
+            color:#cbd5e1;
         }
 
         tr:hover{
-            background:#f3f4f6;
+            background:rgba(37, 99, 235, 0.08);
         }
     </style>
 </head>
@@ -111,7 +120,7 @@
             <td>{{ activity.username }}</td>
             <td>{{ activity.action }}</td>
             <td>{{ activity.ip_address }}</td>
-            <td>{{ activity.timestamp }}</td>
+            <td>{{ activity.timestamp|kenya_time }}</td>
         </tr>
         {% endfor %}
 

@@ -67,16 +67,6 @@ def init_db():
             );
         """)
 
-        # IP BANS
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS ip_bans (
-                id SERIAL PRIMARY KEY,
-                ip_address VARCHAR(100) UNIQUE,
-                reason TEXT,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-
         # ACTIVITIES
         cur.execute("""
             CREATE TABLE IF NOT EXISTS activities (

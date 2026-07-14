@@ -85,7 +85,11 @@ font-weight:bold;
 
 <th>Status</th>
 
+<th>Response</th>
+
 <th>Submitted</th>
+
+<th>Action</th>
 
 </tr>
 
@@ -125,7 +129,20 @@ font-weight:bold;
 
 </td>
 
+<td>{{ report.admin_response or "No response yet" }}</td>
+
 <td>{{ report.created_at }}</td>
+
+<td>
+<form method="POST" action="{{ url_for('respond_report', report_id=report.id) }}">
+    <input type="text" name="admin_response" placeholder="Response" value="{{ report.admin_response or '' }}" required>
+    <select name="status">
+        <option value="Resolved" {% if report.status != 'Pending' %}selected{% endif %}>Resolved</option>
+        <option value="Pending" {% if report.status == 'Pending' %}selected{% endif %}>Pending</option>
+    </select>
+    <button type="submit">Save</button>
+</form>
+</td>
 
 </tr>
 

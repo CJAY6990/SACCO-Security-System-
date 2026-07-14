@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>My Profile | Security Monitoring System</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#eef2f7;
+}
+
+.container{
+
+    width:700px;
+
+    margin:40px auto;
+
+    background:white;
+
+    border-radius:12px;
+
+    padding:35px;
+
+    box-shadow:0 5px 20px rgba(0,0,0,.15);
+
+}
+
+h2{
+
+    text-align:center;
+
+    color:#1e3a8a;
+
+    margin-bottom:30px;
+
+}
+
+.profile-photo{
+
+    text-align:center;
+
+    margin-bottom:25px;
+
+}
+
+.profile-photo img{
+
+    width:160px;
+
+    height:160px;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    border:5px solid #2563eb;
+
+}
+
+.profile-photo input{
+
+    margin-top:15px;
+
+}
+
+.row{
+
+    margin-bottom:18px;
+
+}
+
+label{
+
+    display:block;
+
+    margin-bottom:8px;
+
+    font-weight:bold;
+
+    color:#374151;
+
+}
+
+input[type=text],
+input[type=email]{
+
+    width:100%;
+
+    padding:12px;
+
+    border:1px solid #d1d5db;
+
+    border-radius:8px;
+
+}
+
+.info{
+
+    background:#f8fafc;
+
+    padding:12px;
+
+    border-radius:8px;
+
+}
+
+.status-active{
+
+    color:green;
+
+    font-weight:bold;
+
+}
+
+.status-inactive{
+
+    color:red;
+
+    font-weight:bold;
+
+}
+
+.buttons{
+
+    margin-top:30px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+}
+
+button{
+
+    background:#2563eb;
+
+    color:white;
+
+    border:none;
+
+    padding:12px 30px;
+
+    border-radius:8px;
+
+    cursor:pointer;
+
+    font-size:15px;
+
+}
+
+button:hover{
+
+    background:#1d4ed8;
+
+}
+
+a{
+
+    background:#475569;
+
+    color:white;
+
+    text-decoration:none;
+
+    padding:12px 30px;
+
+    border-radius:8px;
+
+}
+
+a:hover{
+
+    background:#334155;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>My Profile</h2>
+
+<form
+method="POST"
+action="{{ url_for('profile') }}"
+enctype="multipart/form-data"
+>
+
+<div class="profile-photo">
+
+{% if user.profile_photo %}
+
+<img
+src="{{ url_for('uploaded_file', filename=user.profile_photo) }}"
+alt="Profile Photo">
+
+{% else %}
+
+<img
+src="{{ url_for('uploaded_file', filename='default.png') }}"
+alt="Profile Photo">
+
+{% endif %}
+
+<br>
+
+<input
+type="file"
+name="profile_photo"
+accept=".jpg,.jpeg,.png,.gif">
+
+</div>
+
+<div class="row">
+
+<label>Username</label>
+
+<input
+type="text"
+value="{{ user.username }}"
+readonly>
+
+</div>
+
+<div class="row">
+
+<label>Email</label>
+
+<input
+type="email"
+name="email"
+value="{{ user.email }}"
+required>
+
+</div>
+
+<div class="row">
+
+<label>Role</label>
+
+<div class="info">
+
+{{ user.role }}
+
+</div>
+
+</div>
+
+<div class="row">
+
+<label>Account Status</label>
+
+<div class="info">
+
+{% if user.status=="active" %}
+
+<span class="status-active">
+
+Active
+
+</span>
+
+{% else %}
+
+<span class="status-inactive">
+
+Inactive
+
+</span>
+
+{% endif %}
+
+</div>
+
+</div>
+
+<div class="row">
+
+<label>Email Verification</label>
+
+<div class="info">
+
+{% if user.verified %}
+
+✅ Verified
+
+{% else %}
+
+❌ Not Verified
+
+{% endif %}
+
+</div>
+
+</div>
+
+<div class="row">
+
+<label>Account Created</label>
+
+<div class="info">
+
+{{ created_at }}
+
+</div>
+
+</div>
+
+<div class="row">
+
+<label>Last Updated</label>
+
+<div class="info">
+
+{{ updated_at }}
+
+</div>
+
+</div>
+
+<div class="buttons">
+
+<button
+type="submit">
+
+Save Changes
+
+</button>
+
+<a
+href="{{ url_for('user_dashboard') }}">
+
+Back
+
+</a>
+
+</div>
+
+</form>
+
+</div>
+
+</body>
+
+</html>
