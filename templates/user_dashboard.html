@@ -458,11 +458,16 @@ function hideLoader() {
 
 function initializeLoader() {
     hideLoader();
-    document.querySelectorAll("a, button").forEach((element) => {
-        element.addEventListener("click", () => {
-            if (element.tagName.toLowerCase() === "a" && element.getAttribute("href") && !element.getAttribute("href").startsWith("#")) {
-                showLoader("Opening page...");
-            }
+
+    document.querySelectorAll("a[href]:not([href^='#'])").forEach((link) => {
+        link.addEventListener("click", () => {
+            showLoader("Opening page...");
+        });
+    });
+
+    document.querySelectorAll("form").forEach((formElement) => {
+        formElement.addEventListener("submit", () => {
+            showLoader("Processing request...");
         });
     });
 }
@@ -476,6 +481,9 @@ window.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
         hideLoader();
     }
+});
+window.addEventListener("beforeunload", () => {
+    showLoader();
 });
 
 initializeLoader();

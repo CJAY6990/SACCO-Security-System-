@@ -473,15 +473,16 @@ function hideLoader() {
 
 function initializeLoader() {
     hideLoader();
-    document.querySelectorAll("a, button, input[type='submit']").forEach((element) => {
-        element.addEventListener("click", () => {
-            if (element.tagName.toLowerCase() === "a" && element.getAttribute("href") && !element.getAttribute("href").startsWith("#")) {
-                showLoader("Opening page...");
-            }
 
-            if (element.tagName.toLowerCase() === "button" || element.type === "submit") {
-                showLoader("Processing request...");
-            }
+    document.querySelectorAll("a[href]:not([href^='#'])").forEach((link) => {
+        link.addEventListener("click", () => {
+            showLoader("Opening page...");
+        });
+    });
+
+    document.querySelectorAll("form").forEach((formElement) => {
+        formElement.addEventListener("submit", () => {
+            showLoader("Processing request...");
         });
     });
 }
@@ -496,6 +497,13 @@ window.addEventListener("visibilitychange", () => {
         hideLoader();
     }
 });
+window.addEventListener("beforeunload", () => {
+    showLoader();
+});
+
+if (document.readyState === "interactive" || document.readyState === "complete") {
+    hideLoader();
+}
 
 initializeLoader();
 
@@ -520,31 +528,38 @@ function initializeSocket() {
         console.warn("Socket connect error:", err);
     });
 
-    socket.on("security_event", function(data){
+    socket.on("security_event", function(data) {
+        let container = document.getElementById("notification-container");
+        let notification = document.createElement("div");
 
-        let container =
-            document.getElementById(
-                "notification-container"
-            );
+        notification.className = "notification";
+        notification.innerHTML = `
+            <strong>${data.type}</strong><br>
+            User: ${data.user}<br>
+            Details: ${data.details || "N/A"}
+        `;
 
-    let notification =
-        document.createElement("div");
+        container.appendChild(notification);
 
-    notification.className = "notification";
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    });
+}
 
-    notification.innerHTML = `
-        <strong>${data.type}</strong><br>
-        User: ${data.user}<br>
-        Details: ${data.details || "N/A"}
-    `;
-
-    container.appendChild(notification);
-
-    setTimeout(() => {
-        notification.remove();
-    }, 5000);
-
+window.addEventListener("pageshow", function(event) {
+    if (event.persisted || !socket || socket.disconnected) {
+        initializeSocket();
+    }
 });
+
+window.addEventListener("pagehide", function() {
+    if (socket) {
+        socket.disconnect();
+    }
+});
+
+initializeSocket();
 
 </script>
 

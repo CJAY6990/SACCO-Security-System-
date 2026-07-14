@@ -259,12 +259,21 @@ window.addEventListener("visibilitychange", () => {
         hideLoader();
     }
 });
+window.addEventListener("beforeunload", () => {
+    showLoader();
+});
 
 if (form) {
     form.addEventListener("submit", () => {
         showLoader();
     });
 }
+
+document.querySelectorAll("a[href]:not([href^='#'])").forEach((link) => {
+    link.addEventListener("click", () => {
+        showLoader();
+    });
+});
 </script>
 
 </body>
